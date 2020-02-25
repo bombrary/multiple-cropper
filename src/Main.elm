@@ -125,12 +125,12 @@ init jsVal =
       , hold = HoldNothing
       , select = SelectNothing
       , mousePosition = MousePosition 0 0 0 0
-      , imgWidth = 10
-      , imgHeight = 10
+      , imgWidth = 1
+      , imgHeight = 1
       , imgSrc = src
       , clippedImages = []
       }
-    , Cmd.none
+    , askImageSize src
     )
 
 
@@ -190,9 +190,6 @@ update msg model =
                     let
                         newBox =
                             BB.transform model.mousePosition pos box
-
-                        _ =
-                            Debug.log "box" newBox
                     in
                     ( { model
                         | boxies =
@@ -312,11 +309,15 @@ update msg model =
             )
 
         ImageSizeReceived w h ->
-            ( { model
-                | imgWidth = w
-                , imgHeight = h
-              }
-            , clipImageCommand model
+            let
+                newModel =
+                    { model
+                        | imgWidth = w
+                        , imgHeight = h
+                    }
+            in
+            ( newModel
+            , clipImageCommand newModel
             )
 
         ClippedImagesReceived list ->
@@ -406,21 +407,28 @@ clipImageCommand model =
                 model.boxies
     in
     askClippedImages <|
-        JE.list
-            (\e ->
-                let
-                    ( id, b ) =
-                        e
-                in
-                JE.object
-                    [ ( "id", JE.int id )
-                    , ( "x", JE.float b.x )
-                    , ( "y", JE.float b.y )
-                    , ( "width", JE.float b.width )
-                    , ( "height", JE.float b.height )
-                    ]
-            )
-            (BB.toList boxies)
+        JE.object
+            [ ( "src"
+              , JE.string model.imgSrc
+              )
+            , ( "boxies"
+              , JE.list
+                    (\e ->
+                        let
+                            ( id, b ) =
+                                e
+                        in
+                        JE.object
+                            [ ( "id", JE.int id )
+                            , ( "x", JE.float b.x )
+                            , ( "y", JE.float b.y )
+                            , ( "width", JE.float b.width )
+                            , ( "height", JE.float b.height )
+                            ]
+                    )
+                    (BB.toList boxies)
+              )
+            ]
 
 
 view : Model -> Html Msg
@@ -455,7 +463,6 @@ viewMain model =
                     , SA.y "0"
                     , SA.width (String.fromFloat svgWidth)
                     , SA.height (String.fromFloat svgHeight)
-                    , SE.on "load" (JD.succeed ImageLoaded)
                     ]
                     []
               ]

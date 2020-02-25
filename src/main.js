@@ -5720,9 +5720,9 @@ var $author$project$Main$init = function (jsVal) {
 			boxies: $author$project$Main$initialBoxies,
 			clippedImages: _List_Nil,
 			hold: $author$project$Main$HoldNothing,
-			imgHeight: 10,
+			imgHeight: 1,
 			imgSrc: src,
-			imgWidth: 10,
+			imgWidth: 1,
 			mousePosition: A4($author$project$Main$MousePosition, 0, 0, 0, 0),
 			select: $author$project$Main$SelectNothing
 		},
@@ -6254,33 +6254,42 @@ var $author$project$Main$clipImageCommand = function (model) {
 		A2($author$project$Main$svgSizeRatio, model.imgWidth, model.imgHeight),
 		model.boxies);
 	return $author$project$Main$askClippedImages(
-		A2(
-			$elm$json$Json$Encode$list,
-			function (e) {
-				var _v0 = e;
-				var id = _v0.a;
-				var b = _v0.b;
-				return $elm$json$Json$Encode$object(
-					_List_fromArray(
-						[
-							_Utils_Tuple2(
-							'id',
-							$elm$json$Json$Encode$int(id)),
-							_Utils_Tuple2(
-							'x',
-							$elm$json$Json$Encode$float(b.x)),
-							_Utils_Tuple2(
-							'y',
-							$elm$json$Json$Encode$float(b.y)),
-							_Utils_Tuple2(
-							'width',
-							$elm$json$Json$Encode$float(b.width)),
-							_Utils_Tuple2(
-							'height',
-							$elm$json$Json$Encode$float(b.height))
-						]));
-			},
-			$author$project$BBoxies$toList(boxies)));
+		$elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'src',
+					$elm$json$Json$Encode$string(model.imgSrc)),
+					_Utils_Tuple2(
+					'boxies',
+					A2(
+						$elm$json$Json$Encode$list,
+						function (e) {
+							var _v0 = e;
+							var id = _v0.a;
+							var b = _v0.b;
+							return $elm$json$Json$Encode$object(
+								_List_fromArray(
+									[
+										_Utils_Tuple2(
+										'id',
+										$elm$json$Json$Encode$int(id)),
+										_Utils_Tuple2(
+										'x',
+										$elm$json$Json$Encode$float(b.x)),
+										_Utils_Tuple2(
+										'y',
+										$elm$json$Json$Encode$float(b.y)),
+										_Utils_Tuple2(
+										'width',
+										$elm$json$Json$Encode$float(b.width)),
+										_Utils_Tuple2(
+										'height',
+										$elm$json$Json$Encode$float(b.height))
+									]));
+						},
+						$author$project$BBoxies$toList(boxies)))
+				])));
 };
 var $jxxcarlson$elm_tar$Tar$BinaryData = function (a) {
 	return {$: 'BinaryData', a: a};
@@ -8540,7 +8549,6 @@ var $author$project$BBoxies$insert = F3(
 				entities: A3($elm$core$Dict$insert, i, entity, bboxies.entities)
 			});
 	});
-var $elm$core$Debug$log = _Debug_log;
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $elm$core$List$sortBy = _List_sortBy;
@@ -9027,7 +9035,6 @@ var $author$project$Main$update = F2(
 				} else {
 					var box = _v1.a;
 					var newBox = A3($author$project$BBox$transform, model.mousePosition, pos, box);
-					var _v2 = A2($elm$core$Debug$log, 'box', newBox);
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
@@ -9038,11 +9045,11 @@ var $author$project$Main$update = F2(
 				}
 			case 'MouseUp':
 				var id = msg.a;
-				var _v3 = A2($author$project$BBoxies$get, id, model.boxies);
-				if (_v3.$ === 'Nothing') {
+				var _v2 = A2($author$project$BBoxies$get, id, model.boxies);
+				if (_v2.$ === 'Nothing') {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				} else {
-					var box = _v3.a;
+					var box = _v2.a;
 					var newBox = $author$project$BBox$normalize(box);
 					var newBoxies = A3($author$project$BBoxies$insert, id, newBox, model.boxies);
 					var newModel = _Utils_update(
@@ -9067,12 +9074,12 @@ var $author$project$Main$update = F2(
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
 			case 'AddBox':
-				var _v5 = A2($author$project$Main$svgSizeWith, model.imgWidth, model.imgHeight);
-				var svgWidth = _v5.a;
-				var svgHeight = _v5.b;
-				var _v6 = _Utils_Tuple2(100, 100);
-				var w = _v6.a;
-				var h = _v6.b;
+				var _v4 = A2($author$project$Main$svgSizeWith, model.imgWidth, model.imgHeight);
+				var svgWidth = _v4.a;
+				var svgHeight = _v4.b;
+				var _v5 = _Utils_Tuple2(100, 100);
+				var w = _v5.a;
+				var h = _v5.b;
 				var newBox = A5($author$project$BBox$BBox, (svgWidth - w) / 2, (svgHeight - h) / 2, w, h, $author$project$BBox$None);
 				var newBoxies = A2($author$project$BBoxies$add, newBox, model.boxies);
 				var newModel = _Utils_update(
@@ -9082,16 +9089,16 @@ var $author$project$Main$update = F2(
 					newModel,
 					$author$project$Main$clipImageCommand(newModel));
 			case 'CopyBox':
-				var _v7 = model.select;
-				if (_v7.$ === 'SelectNothing') {
+				var _v6 = model.select;
+				if (_v6.$ === 'SelectNothing') {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				} else {
-					var id = _v7.a;
-					var _v8 = A2($author$project$BBoxies$get, id, model.boxies);
-					if (_v8.$ === 'Nothing') {
+					var id = _v6.a;
+					var _v7 = A2($author$project$BBoxies$get, id, model.boxies);
+					if (_v7.$ === 'Nothing') {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
-						var box = _v8.a;
+						var box = _v7.a;
 						var newBoxies = A2($author$project$BBoxies$add, box, model.boxies);
 						var newModel = _Utils_update(
 							model,
@@ -9131,11 +9138,12 @@ var $author$project$Main$update = F2(
 			case 'ImageSizeReceived':
 				var w = msg.a;
 				var h = msg.b;
+				var newModel = _Utils_update(
+					model,
+					{imgHeight: h, imgWidth: w});
 				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{imgHeight: h, imgWidth: w}),
-					$author$project$Main$clipImageCommand(model));
+					newModel,
+					$author$project$Main$clipImageCommand(newModel));
 			case 'ClippedImagesReceived':
 				var list = msg.a;
 				return _Utils_Tuple2(
@@ -9193,7 +9201,6 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
-var $author$project$Main$ImageLoaded = {$: 'ImageLoaded'};
 var $elm$virtual_dom$VirtualDom$attribute = F2(
 	function (key, value) {
 		return A2(
@@ -9219,18 +9226,6 @@ var $elm$svg$Svg$Attributes$height = _VirtualDom_attribute('height');
 var $elm$svg$Svg$Attributes$id = _VirtualDom_attribute('id');
 var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
 var $elm$svg$Svg$image = $elm$svg$Svg$trustedNode('image');
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$svg$Svg$Events$on = $elm$html$Html$Events$on;
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
@@ -9328,6 +9323,17 @@ var $author$project$Main$Hold = F2(
 	});
 var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
 var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
 var $elm$svg$Svg$Events$onMouseDown = function (msg) {
 	return A2(
 		$elm$html$Html$Events$on,
@@ -9566,11 +9572,7 @@ var $author$project$Main$viewMain = function (model) {
 								$elm$svg$Svg$Attributes$width(
 								$elm$core$String$fromFloat(svgWidth)),
 								$elm$svg$Svg$Attributes$height(
-								$elm$core$String$fromFloat(svgHeight)),
-								A2(
-								$elm$svg$Svg$Events$on,
-								'load',
-								$elm$json$Json$Decode$succeed($author$project$Main$ImageLoaded))
+								$elm$core$String$fromFloat(svgHeight))
 							]),
 						_List_Nil)
 					]),

@@ -1,9 +1,12 @@
-const outImages = (boxies) => {
-  const img = document.getElementById('image_input')
-  const res = boxies.map((b) => 
-    clippedImageCanvas(img, b.x, b.y, b.width, b.height).toDataURL()
-  );
-  app.ports.receiveClippedImages.send(res);
+const outImages = (src, boxies) => {
+  const img = new Image
+  img.src = src
+  img.onload = () => {
+    const res = boxies.map((b) => {
+      return clippedImageCanvas(img, b.x, b.y, b.width, b.height).toDataURL()
+    });
+    app.ports.receiveClippedImages.send(res);
+  }
 }
 
 const clippedImageCanvas = (img, x0, y0, width, height) => {

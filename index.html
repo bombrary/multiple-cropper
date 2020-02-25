@@ -26,8 +26,8 @@
         node: document.getElementById('elm'),
         flags: "img/sample.png"
       });
-      app.ports.askClippedImages.subscribe((data) => {
-        outImages(data);
+      app.ports.askClippedImages.subscribe(({src, boxies}) => {
+        outImages(src, boxies);
       });
       app.ports.askImageSize.subscribe((url) => {
         const image = new Image()

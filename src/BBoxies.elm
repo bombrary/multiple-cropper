@@ -10,6 +10,8 @@ type alias Id =
 
 type alias BBoxies =
     { entities : Dict Id BBox
+    , select : Maybe Id
+    , hold : Maybe Id
     , nextId : Id
     }
 
@@ -18,7 +20,29 @@ empty : BBoxies
 empty =
     { entities = Dict.empty
     , nextId = 0
+    , select = Nothing
+    , hold = Nothing
     }
+
+
+toggleSelect : Id -> BBoxies -> BBoxies
+toggleSelect id boxies =
+    case boxies.select of
+        Nothing ->
+            { boxies | select = Just id }
+
+        Just _ ->
+            { boxies | select = Nothing }
+
+
+toggleHold : Id -> BBoxies -> BBoxies
+toggleHold id boxies =
+    case boxies.hold of
+        Nothing ->
+            { boxies | hold = Just id }
+
+        Just _ ->
+            { boxies | hold = Nothing }
 
 
 fromList : List BBox -> BBoxies
@@ -31,13 +55,16 @@ fromList xs =
         Dict.fromList <|
             List.map2 Tuple.pair (List.range 0 (len - 1)) xs
     , nextId = len
+    , select = Nothing
+    , hold = Nothing
     }
 
 
 add : BBox -> BBoxies -> BBoxies
-add entity { entities, nextId } =
-    { entities = Dict.insert nextId entity entities
-    , nextId = nextId + 1
+add entity ({ entities, nextId } as boxies) =
+    { boxies
+        | entities = Dict.insert nextId entity entities
+        , nextId = nextId + 1
     }
 
 

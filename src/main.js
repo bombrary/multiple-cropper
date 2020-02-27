@@ -6093,26 +6093,35 @@ var $author$project$Main$receiveImageSizeSub = function (model) {
 };
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
 var $elm$browser$Browser$Events$onKeyDown = A2($elm$browser$Browser$Events$on, $elm$browser$Browser$Events$Document, 'keydown');
-var $author$project$Main$KeyDelete = function (a) {
-	return {$: 'KeyDelete', a: a};
-};
+var $author$project$Main$KeyArrowDown = {$: 'KeyArrowDown'};
+var $author$project$Main$KeyArrowLeft = {$: 'KeyArrowLeft'};
+var $author$project$Main$KeyArrowRight = {$: 'KeyArrowRight'};
+var $author$project$Main$KeyArrowUp = {$: 'KeyArrowUp'};
+var $author$project$Main$KeyDelete = {$: 'KeyDelete'};
 var $author$project$Main$KeyDowned = function (a) {
 	return {$: 'KeyDowned', a: a};
 };
 var $author$project$Main$KeyOthers = function (a) {
 	return {$: 'KeyOthers', a: a};
 };
-var $author$project$Main$toKey = F2(
-	function (id, key) {
-		if (key === 'Delete') {
-			return $author$project$Main$KeyDowned(
-				$author$project$Main$KeyDelete(id));
-		} else {
+var $author$project$Main$toKey = function (key) {
+	switch (key) {
+		case 'Delete':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyDelete);
+		case 'ArrowLeft':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowLeft);
+		case 'ArrowUp':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowUp);
+		case 'ArrowRight':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowRight);
+		case 'ArrowDown':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowDown);
+		default:
 			var c = key;
 			return $author$project$Main$KeyDowned(
 				$author$project$Main$KeyOthers(c));
-		}
-	});
+	}
+};
 var $author$project$Main$selectSub = function (model) {
 	var _v0 = model.select;
 	if (_v0.$ === 'SelectNothing') {
@@ -6122,7 +6131,7 @@ var $author$project$Main$selectSub = function (model) {
 		return $elm$browser$Browser$Events$onKeyDown(
 			A2(
 				$elm$json$Json$Decode$map,
-				$author$project$Main$toKey(id),
+				$author$project$Main$toKey,
 				A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
 	}
 };
@@ -8549,48 +8558,6 @@ var $author$project$BBoxies$insert = F3(
 				entities: A3($elm$core$Dict$insert, i, entity, bboxies.entities)
 			});
 	});
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$core$List$sortBy = _List_sortBy;
-var $elm$core$List$sort = function (xs) {
-	return A2($elm$core$List$sortBy, $elm$core$Basics$identity, xs);
-};
-var $author$project$BBox$normalize = function (_v0) {
-	var x = _v0.x;
-	var y = _v0.y;
-	var width = _v0.width;
-	var height = _v0.height;
-	var hold = _v0.hold;
-	var list = $elm$core$List$sort(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(x, y),
-				_Utils_Tuple2(x + width, y),
-				_Utils_Tuple2(x, y + height),
-				_Utils_Tuple2(x + width, y + height)
-			]));
-	if ((((list.b && list.b.b) && list.b.b.b) && list.b.b.b.b) && (!list.b.b.b.b.b)) {
-		var a = list.a;
-		var _v2 = list.b;
-		var b = _v2.a;
-		var _v3 = _v2.b;
-		var c = _v3.a;
-		var _v4 = _v3.b;
-		var d = _v4.a;
-		var _v5 = d;
-		var x1 = _v5.a;
-		var y1 = _v5.b;
-		var _v6 = a;
-		var x0 = _v6.a;
-		var y0 = _v6.b;
-		var _v7 = _Utils_Tuple2(x1 - x0, y1 - y0);
-		var newW = _v7.a;
-		var newH = _v7.b;
-		return A5($author$project$BBox$BBox, x0, y0, newW, newH, hold);
-	} else {
-		return A5($author$project$BBox$BBox, x, y, width, height, hold);
-	}
-};
 var $elm$core$Dict$getMin = function (dict) {
 	getMin:
 	while (true) {
@@ -8953,6 +8920,97 @@ var $elm$core$Dict$remove = F2(
 			return x;
 		}
 	});
+var $elm$core$Dict$update = F3(
+	function (targetKey, alter, dictionary) {
+		var _v0 = alter(
+			A2($elm$core$Dict$get, targetKey, dictionary));
+		if (_v0.$ === 'Just') {
+			var value = _v0.a;
+			return A3($elm$core$Dict$insert, targetKey, value, dictionary);
+		} else {
+			return A2($elm$core$Dict$remove, targetKey, dictionary);
+		}
+	});
+var $author$project$BBoxies$update = F3(
+	function (i, f, bboxies) {
+		var g = function (maybeE) {
+			if (maybeE.$ === 'Just') {
+				var e = maybeE.a;
+				return $elm$core$Maybe$Just(
+					f(e));
+			} else {
+				return $elm$core$Maybe$Nothing;
+			}
+		};
+		var newEntities = A3($elm$core$Dict$update, i, g, bboxies.entities);
+		return _Utils_update(
+			bboxies,
+			{entities: newEntities});
+	});
+var $author$project$Main$updateSelectBoxIfExists = F2(
+	function (_v0, f) {
+		var select = _v0.select;
+		var boxies = _v0.boxies;
+		if (select.$ === 'SelectNothing') {
+			return boxies;
+		} else {
+			var id = select.a;
+			return A3($author$project$BBoxies$update, id, f, boxies);
+		}
+	});
+var $author$project$Main$moveSelectBoxIfExists = F3(
+	function (model, dx, dy) {
+		return A2(
+			$author$project$Main$updateSelectBoxIfExists,
+			model,
+			function (c) {
+				return _Utils_update(
+					c,
+					{x: c.x + dx, y: c.y + dy});
+			});
+	});
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $elm$core$List$sortBy = _List_sortBy;
+var $elm$core$List$sort = function (xs) {
+	return A2($elm$core$List$sortBy, $elm$core$Basics$identity, xs);
+};
+var $author$project$BBox$normalize = function (_v0) {
+	var x = _v0.x;
+	var y = _v0.y;
+	var width = _v0.width;
+	var height = _v0.height;
+	var hold = _v0.hold;
+	var list = $elm$core$List$sort(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(x, y),
+				_Utils_Tuple2(x + width, y),
+				_Utils_Tuple2(x, y + height),
+				_Utils_Tuple2(x + width, y + height)
+			]));
+	if ((((list.b && list.b.b) && list.b.b.b) && list.b.b.b.b) && (!list.b.b.b.b.b)) {
+		var a = list.a;
+		var _v2 = list.b;
+		var b = _v2.a;
+		var _v3 = _v2.b;
+		var c = _v3.a;
+		var _v4 = _v3.b;
+		var d = _v4.a;
+		var _v5 = d;
+		var x1 = _v5.a;
+		var y1 = _v5.b;
+		var _v6 = a;
+		var x0 = _v6.a;
+		var y0 = _v6.b;
+		var _v7 = _Utils_Tuple2(x1 - x0, y1 - y0);
+		var newW = _v7.a;
+		var newH = _v7.b;
+		return A5($author$project$BBox$BBox, x0, y0, newW, newH, hold);
+	} else {
+		return A5($author$project$BBox$BBox, x, y, width, height, hold);
+	}
+};
 var $author$project$BBoxies$remove = F2(
 	function (i, bboxies) {
 		return _Utils_update(
@@ -9061,25 +9119,69 @@ var $author$project$Main$update = F2(
 				}
 			case 'KeyDowned':
 				var key = msg.a;
-				if (key.$ === 'KeyDelete') {
-					var id = key.a;
-					var newBoxies = A2($author$project$BBoxies$remove, id, model.boxies);
-					var newModel = _Utils_update(
-						model,
-						{boxies: newBoxies});
-					return _Utils_Tuple2(
-						newModel,
-						$author$project$Main$clipImageCommand(newModel));
-				} else {
-					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				switch (key.$) {
+					case 'KeyDelete':
+						var newBoxies = function () {
+							var _v4 = model.select;
+							if (_v4.$ === 'SelectNothing') {
+								return model.boxies;
+							} else {
+								var id = _v4.a;
+								return A2($author$project$BBoxies$remove, id, model.boxies);
+							}
+						}();
+						var newModel = _Utils_update(
+							model,
+							{boxies: newBoxies});
+						return _Utils_Tuple2(
+							newModel,
+							$author$project$Main$clipImageCommand(newModel));
+					case 'KeyArrowLeft':
+						var newModel = _Utils_update(
+							model,
+							{
+								boxies: A3($author$project$Main$moveSelectBoxIfExists, model, -1, 0)
+							});
+						return _Utils_Tuple2(
+							newModel,
+							$author$project$Main$clipImageCommand(newModel));
+					case 'KeyArrowUp':
+						var newModel = _Utils_update(
+							model,
+							{
+								boxies: A3($author$project$Main$moveSelectBoxIfExists, model, 0, -1)
+							});
+						return _Utils_Tuple2(
+							newModel,
+							$author$project$Main$clipImageCommand(newModel));
+					case 'KeyArrowRight':
+						var newModel = _Utils_update(
+							model,
+							{
+								boxies: A3($author$project$Main$moveSelectBoxIfExists, model, 1, 0)
+							});
+						return _Utils_Tuple2(
+							newModel,
+							$author$project$Main$clipImageCommand(newModel));
+					case 'KeyArrowDown':
+						var newModel = _Utils_update(
+							model,
+							{
+								boxies: A3($author$project$Main$moveSelectBoxIfExists, model, 0, 1)
+							});
+						return _Utils_Tuple2(
+							newModel,
+							$author$project$Main$clipImageCommand(newModel));
+					default:
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
 			case 'AddBox':
-				var _v4 = A2($author$project$Main$svgSizeWith, model.imgWidth, model.imgHeight);
-				var svgWidth = _v4.a;
-				var svgHeight = _v4.b;
-				var _v5 = _Utils_Tuple2(100, 100);
-				var w = _v5.a;
-				var h = _v5.b;
+				var _v5 = A2($author$project$Main$svgSizeWith, model.imgWidth, model.imgHeight);
+				var svgWidth = _v5.a;
+				var svgHeight = _v5.b;
+				var _v6 = _Utils_Tuple2(100, 100);
+				var w = _v6.a;
+				var h = _v6.b;
 				var newBox = A5($author$project$BBox$BBox, (svgWidth - w) / 2, (svgHeight - h) / 2, w, h, $author$project$BBox$None);
 				var newBoxies = A2($author$project$BBoxies$add, newBox, model.boxies);
 				var newModel = _Utils_update(
@@ -9089,16 +9191,16 @@ var $author$project$Main$update = F2(
 					newModel,
 					$author$project$Main$clipImageCommand(newModel));
 			case 'CopyBox':
-				var _v6 = model.select;
-				if (_v6.$ === 'SelectNothing') {
+				var _v7 = model.select;
+				if (_v7.$ === 'SelectNothing') {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				} else {
-					var id = _v6.a;
-					var _v7 = A2($author$project$BBoxies$get, id, model.boxies);
-					if (_v7.$ === 'Nothing') {
+					var id = _v7.a;
+					var _v8 = A2($author$project$BBoxies$get, id, model.boxies);
+					if (_v8.$ === 'Nothing') {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					} else {
-						var box = _v7.a;
+						var box = _v8.a;
 						var newBoxies = A2($author$project$BBoxies$add, box, model.boxies);
 						var newModel = _Utils_update(
 							model,

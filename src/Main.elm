@@ -153,7 +153,11 @@ type Msg
 
 
 type Key
-    = KeyDelete BB.Id
+    = KeyDelete
+    | KeyArrowLeft
+    | KeyArrowUp
+    | KeyArrowRight
+    | KeyArrowDown
     | KeyOthers String
 
 
@@ -222,13 +226,66 @@ update msg model =
 
         KeyDowned key ->
             case key of
-                KeyDelete id ->
+                KeyDelete ->
                     let
                         newBoxies =
-                            BB.remove id model.boxies
+                            case model.select of
+                                SelectNothing ->
+                                    model.boxies
+
+                                SelectBBox id ->
+                                    BB.remove id model.boxies
 
                         newModel =
                             { model | boxies = newBoxies }
+                    in
+                    ( newModel
+                    , clipImageCommand newModel
+                    )
+
+                KeyArrowLeft ->
+                    let
+                        newModel =
+                            { model
+                                | boxies =
+                                    moveSelectBoxIfExists model -1 0
+                            }
+                    in
+                    ( newModel
+                    , clipImageCommand newModel
+                    )
+
+                KeyArrowUp ->
+                    let
+                        newModel =
+                            { model
+                                | boxies =
+                                    moveSelectBoxIfExists model 0 -1
+                            }
+                    in
+                    ( newModel
+                    , clipImageCommand newModel
+                    )
+
+                KeyArrowRight ->
+                    let
+                        newModel =
+                            { model
+                                | boxies =
+                                    moveSelectBoxIfExists model 1 0
+                            }
+                    in
+                    ( newModel
+                    , clipImageCommand newModel
+                    )
+
+                KeyArrowDown ->
+                    let
+                        newModel =
+                            { model
+                                | boxies =
+                                    moveSelectBoxIfExists model 0 1
+                            }
                     in
                     ( newModel
                     , clipImageCommand newModel
@@ -351,6 +408,22 @@ update msg model =
               }
             , Cmd.none
             )
+
+
+updateSelectBoxIfExists : Model -> (BB.BBox -> BB.BBox) -> BB.BBoxies
+updateSelectBoxIfExists { select, boxies } f =
+    case select of
+        SelectNothing ->
+            boxies
+
+        SelectBBox id ->
+            BB.update id f boxies
+
+
+moveSelectBoxIfExists : Model -> Float -> Float -> BB.BBoxies
+moveSelectBoxIfExists model dx dy =
+    updateSelectBoxIfExists model
+        (\c -> { c | x = c.x + dx, y = c.y + dy })
 
 
 downloadBase64Tar : List ClippedImage -> Cmd Msg
@@ -770,14 +843,33 @@ selectSub model =
 
         SelectBBox id ->
             BE.onKeyDown <|
-                JD.map (toKey id) (JD.field "key" JD.string)
+                JD.map toKey (JD.field "key" JD.string)
 
 
-toKey : BB.Id -> String -> Msg
-toKey id key =
+onKeyDown : Attribute Msg
+onKeyDown =
+    SE.preventDefaultOn "keydown" <|
+        JD.map (\msg -> ( msg, True )) <|
+            JD.map toKey (JD.field "key" JD.string)
+
+
+toKey : String -> Msg
+toKey key =
     case key of
         "Delete" ->
-            KeyDowned (KeyDelete id)
+            KeyDowned KeyDelete
+
+        "ArrowLeft" ->
+            KeyDowned KeyArrowLeft
+
+        "ArrowUp" ->
+            KeyDowned KeyArrowUp
+
+        "ArrowRight" ->
+            KeyDowned KeyArrowRight
+
+        "ArrowDown" ->
+            KeyDowned KeyArrowDown
 
         c ->
             KeyDowned (KeyOthers c)

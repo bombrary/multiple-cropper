@@ -145,7 +145,6 @@ type Msg
     | ImageRequested
     | ImageSelected File
     | ImageUrlReceived String
-    | ImageLoaded
     | ImageSizeReceived Float Float
     | ClippedImagesReceived (List String)
     | DownloadTar
@@ -300,12 +299,7 @@ update msg model =
                 | imgSrc = url
                 , boxies = BB.empty
               }
-            , Cmd.none
-            )
-
-        ImageLoaded ->
-            ( model
-            , askImageSize model.imgSrc
+            , askImageSize url
             )
 
         ImageSizeReceived w h ->

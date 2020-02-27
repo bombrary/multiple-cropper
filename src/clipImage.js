@@ -1,5 +1,5 @@
 const outImages = (src, boxies) => {
-  const img = new Image
+  const img = new Image()
   img.src = src
   img.onload = () => {
     const res = boxies.map((b) => {

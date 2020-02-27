@@ -9130,11 +9130,7 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{boxies: $author$project$BBoxies$empty, imgSrc: url}),
-					$elm$core$Platform$Cmd$none);
-			case 'ImageLoaded':
-				return _Utils_Tuple2(
-					model,
-					$author$project$Main$askImageSize(model.imgSrc));
+					$author$project$Main$askImageSize(url));
 			case 'ImageSizeReceived':
 				var w = msg.a;
 				var h = msg.b;

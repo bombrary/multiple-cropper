@@ -6050,6 +6050,52 @@ var $author$project$Main$holdSub = function (model) {
 				]));
 	}
 };
+var $author$project$Main$KeyDowned = function (a) {
+	return {$: 'KeyDowned', a: a};
+};
+var $author$project$Main$KeyOthers = function (a) {
+	return {$: 'KeyOthers', a: a};
+};
+var $author$project$Main$preventDefaultOnKeyDown = _Platform_incomingPort('preventDefaultOnKeyDown', $elm$json$Json$Decode$value);
+var $author$project$Main$KeyArrowDown = {$: 'KeyArrowDown'};
+var $author$project$Main$KeyArrowLeft = {$: 'KeyArrowLeft'};
+var $author$project$Main$KeyArrowRight = {$: 'KeyArrowRight'};
+var $author$project$Main$KeyArrowUp = {$: 'KeyArrowUp'};
+var $author$project$Main$KeyDelete = {$: 'KeyDelete'};
+var $author$project$Main$toKey = function (key) {
+	switch (key) {
+		case 'Delete':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyDelete);
+		case 'ArrowLeft':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowLeft);
+		case 'ArrowUp':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowUp);
+		case 'ArrowRight':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowRight);
+		case 'ArrowDown':
+			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowDown);
+		default:
+			var c = key;
+			return $author$project$Main$KeyDowned(
+				$author$project$Main$KeyOthers(c));
+	}
+};
+var $author$project$Main$onKeyDownSub = function (model) {
+	return $author$project$Main$preventDefaultOnKeyDown(
+		function (receivedKey) {
+			return A2(
+				$elm$core$Result$withDefault,
+				$author$project$Main$KeyDowned(
+					$author$project$Main$KeyOthers('none')),
+				A2(
+					$elm$json$Json$Decode$decodeValue,
+					A2(
+						$elm$json$Json$Decode$map,
+						$author$project$Main$toKey,
+						A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)),
+					receivedKey));
+		});
+};
 var $author$project$Main$ClippedImagesReceived = function (a) {
 	return {$: 'ClippedImagesReceived', a: a};
 };
@@ -6091,56 +6137,12 @@ var $author$project$Main$receiveImageSizeSub = function (model) {
 					v));
 		});
 };
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
-var $elm$browser$Browser$Events$onKeyDown = A2($elm$browser$Browser$Events$on, $elm$browser$Browser$Events$Document, 'keydown');
-var $author$project$Main$KeyArrowDown = {$: 'KeyArrowDown'};
-var $author$project$Main$KeyArrowLeft = {$: 'KeyArrowLeft'};
-var $author$project$Main$KeyArrowRight = {$: 'KeyArrowRight'};
-var $author$project$Main$KeyArrowUp = {$: 'KeyArrowUp'};
-var $author$project$Main$KeyDelete = {$: 'KeyDelete'};
-var $author$project$Main$KeyDowned = function (a) {
-	return {$: 'KeyDowned', a: a};
-};
-var $author$project$Main$KeyOthers = function (a) {
-	return {$: 'KeyOthers', a: a};
-};
-var $author$project$Main$toKey = function (key) {
-	switch (key) {
-		case 'Delete':
-			return $author$project$Main$KeyDowned($author$project$Main$KeyDelete);
-		case 'ArrowLeft':
-			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowLeft);
-		case 'ArrowUp':
-			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowUp);
-		case 'ArrowRight':
-			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowRight);
-		case 'ArrowDown':
-			return $author$project$Main$KeyDowned($author$project$Main$KeyArrowDown);
-		default:
-			var c = key;
-			return $author$project$Main$KeyDowned(
-				$author$project$Main$KeyOthers(c));
-	}
-};
-var $author$project$Main$selectSub = function (model) {
-	var _v0 = model.select;
-	if (_v0.$ === 'SelectNothing') {
-		return $elm$core$Platform$Sub$none;
-	} else {
-		var id = _v0.a;
-		return $elm$browser$Browser$Events$onKeyDown(
-			A2(
-				$elm$json$Json$Decode$map,
-				$author$project$Main$toKey,
-				A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string)));
-	}
-};
 var $author$project$Main$subscriptions = function (model) {
 	return $elm$core$Platform$Sub$batch(
 		_List_fromArray(
 			[
 				$author$project$Main$holdSub(model),
-				$author$project$Main$selectSub(model),
+				$author$project$Main$onKeyDownSub(model),
 				$author$project$Main$receiveImageSizeSub(model),
 				$author$project$Main$receiveClippedImagesSub(model),
 				$author$project$Main$failedToLoadImage(
@@ -8948,14 +8950,18 @@ var $author$project$BBoxies$update = F3(
 			{entities: newEntities});
 	});
 var $author$project$Main$updateSelectBoxIfExists = F2(
-	function (_v0, f) {
-		var select = _v0.select;
-		var boxies = _v0.boxies;
+	function (model, f) {
+		var select = model.select;
+		var boxies = model.boxies;
 		if (select.$ === 'SelectNothing') {
-			return boxies;
+			return model;
 		} else {
 			var id = select.a;
-			return A3($author$project$BBoxies$update, id, f, boxies);
+			return _Utils_update(
+				model,
+				{
+					boxies: A3($author$project$BBoxies$update, id, f, boxies)
+				});
 		}
 	});
 var $author$project$Main$moveSelectBoxIfExists = F3(
@@ -9137,38 +9143,22 @@ var $author$project$Main$update = F2(
 							newModel,
 							$author$project$Main$clipImageCommand(newModel));
 					case 'KeyArrowLeft':
-						var newModel = _Utils_update(
-							model,
-							{
-								boxies: A3($author$project$Main$moveSelectBoxIfExists, model, -1, 0)
-							});
+						var newModel = A3($author$project$Main$moveSelectBoxIfExists, model, -1, 0);
 						return _Utils_Tuple2(
 							newModel,
 							$author$project$Main$clipImageCommand(newModel));
 					case 'KeyArrowUp':
-						var newModel = _Utils_update(
-							model,
-							{
-								boxies: A3($author$project$Main$moveSelectBoxIfExists, model, 0, -1)
-							});
+						var newModel = A3($author$project$Main$moveSelectBoxIfExists, model, 0, -1);
 						return _Utils_Tuple2(
 							newModel,
 							$author$project$Main$clipImageCommand(newModel));
 					case 'KeyArrowRight':
-						var newModel = _Utils_update(
-							model,
-							{
-								boxies: A3($author$project$Main$moveSelectBoxIfExists, model, 1, 0)
-							});
+						var newModel = A3($author$project$Main$moveSelectBoxIfExists, model, 1, 0);
 						return _Utils_Tuple2(
 							newModel,
 							$author$project$Main$clipImageCommand(newModel));
 					case 'KeyArrowDown':
-						var newModel = _Utils_update(
-							model,
-							{
-								boxies: A3($author$project$Main$moveSelectBoxIfExists, model, 0, 1)
-							});
+						var newModel = A3($author$project$Main$moveSelectBoxIfExists, model, 0, 1);
 						return _Utils_Tuple2(
 							newModel,
 							$author$project$Main$clipImageCommand(newModel));

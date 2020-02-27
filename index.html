@@ -39,6 +39,10 @@
           app.ports.failedToLoadImage.send();
         }
       });
+      window.addEventListener('keydown', (e) => {
+        app.ports.preventDefaultOnKeyDown.send({ key: e.key });
+        e.preventDefault();
+      });
     </script>
   </body>
 </html>

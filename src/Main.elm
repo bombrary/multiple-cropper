@@ -37,6 +37,9 @@ port receiveClippedImages : (JE.Value -> msg) -> Sub msg
 port failedToLoadImage : (JE.Value -> msg) -> Sub msg
 
 
+port preventDefaultOnKeyDown : (JE.Value -> msg) -> Sub msg
+
+
 svgSizeWith : Float -> Float -> ( Float, Float )
 svgSizeWith width height =
     ( 500
@@ -246,10 +249,7 @@ update msg model =
                 KeyArrowLeft ->
                     let
                         newModel =
-                            { model
-                                | boxies =
-                                    moveSelectBoxIfExists model -1 0
-                            }
+                            moveSelectBoxIfExists model -1 0
                     in
                     ( newModel
                     , clipImageCommand newModel
@@ -258,10 +258,7 @@ update msg model =
                 KeyArrowUp ->
                     let
                         newModel =
-                            { model
-                                | boxies =
-                                    moveSelectBoxIfExists model 0 -1
-                            }
+                            moveSelectBoxIfExists model 0 -1
                     in
                     ( newModel
                     , clipImageCommand newModel
@@ -270,10 +267,7 @@ update msg model =
                 KeyArrowRight ->
                     let
                         newModel =
-                            { model
-                                | boxies =
-                                    moveSelectBoxIfExists model 1 0
-                            }
+                            moveSelectBoxIfExists model 1 0
                     in
                     ( newModel
                     , clipImageCommand newModel
@@ -282,10 +276,7 @@ update msg model =
                 KeyArrowDown ->
                     let
                         newModel =
-                            { model
-                                | boxies =
-                                    moveSelectBoxIfExists model 0 1
-                            }
+                            moveSelectBoxIfExists model 0 1
                     in
                     ( newModel
                     , clipImageCommand newModel
@@ -410,17 +401,17 @@ update msg model =
             )
 
 
-updateSelectBoxIfExists : Model -> (BB.BBox -> BB.BBox) -> BB.BBoxies
-updateSelectBoxIfExists { select, boxies } f =
+updateSelectBoxIfExists : Model -> (BB.BBox -> BB.BBox) -> Model
+updateSelectBoxIfExists ({ select, boxies } as model) f =
     case select of
         SelectNothing ->
-            boxies
+            model
 
         SelectBBox id ->
-            BB.update id f boxies
+            { model | boxies = BB.update id f boxies }
 
 
-moveSelectBoxIfExists : Model -> Float -> Float -> BB.BBoxies
+moveSelectBoxIfExists : Model -> Float -> Float -> Model
 moveSelectBoxIfExists model dx dy =
     updateSelectBoxIfExists model
         (\c -> { c | x = c.x + dx, y = c.y + dy })
@@ -780,7 +771,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ holdSub model
-        , selectSub model
+        , onKeyDownSub model
         , receiveImageSizeSub model
         , receiveClippedImagesSub model
         , failedToLoadImage (\_ -> FailedToLoadImage)
@@ -835,22 +826,14 @@ holdSub model =
                 ]
 
 
-selectSub : Model -> Sub Msg
-selectSub model =
-    case model.select of
-        SelectNothing ->
-            Sub.none
-
-        SelectBBox id ->
-            BE.onKeyDown <|
-                JD.map toKey (JD.field "key" JD.string)
-
-
-onKeyDown : Attribute Msg
-onKeyDown =
-    SE.preventDefaultOn "keydown" <|
-        JD.map (\msg -> ( msg, True )) <|
-            JD.map toKey (JD.field "key" JD.string)
+onKeyDownSub : Model -> Sub Msg
+onKeyDownSub model =
+    preventDefaultOnKeyDown <|
+        \receivedKey ->
+            Result.withDefault (KeyDowned (KeyOthers "none")) <|
+                JD.decodeValue
+                    (JD.map toKey (JD.field "key" JD.string))
+                    receivedKey
 
 
 toKey : String -> Msg

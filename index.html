@@ -12,6 +12,7 @@
       <li><b>Delete</b> key: delete selected box.</li>
       <li><b>Click</b>: select box.</li>
       <li><b>Drag</b>: move or scale box.</b>
+      <li><b>Arrow Key</b>: move box.</b>
       <li><b>Copy</b> button: copy selected box.</li>
       <li><b>Load image</b> button: load image, allowed png, jpeg, gif, and bmp.</li>
       <li>Right side: cropped images for each boxies. Right click to save a image.</li>
@@ -41,7 +42,9 @@
       });
       window.addEventListener('keydown', (e) => {
         app.ports.preventDefaultOnKeyDown.send({ key: e.key });
-        e.preventDefault();
+        if (e.key == "ArrowUp" || e.key == "ArrowDown") {
+          e.preventDefault();
+        }
       });
     </script>
   </body>

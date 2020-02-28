@@ -24,6 +24,15 @@ type alias BBox =
     }
 
 
+bbox : ( Float, Float ) -> ( Float, Float ) -> BBox
+bbox s t =
+    { s = V.fromTuple s
+    , t = V.fromTuple t
+    , holdPos = None
+    , clippedImg = Nothing
+    }
+
+
 type alias Position =
     { x : Float
     , y : Float

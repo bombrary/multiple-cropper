@@ -115,11 +115,6 @@ toMappedList f { entities } =
     Dict.values <| Dict.map f entities
 
 
-sample : BBoxies
-sample =
-    fromList [ bbox0, bbox1, bbox2 ]
-
-
-scaleAll : ( Float, Float ) -> BBoxies -> BBoxies
+scaleAll : Float -> BBoxies -> BBoxies
 scaleAll ratio bboxies =
     map (\i e -> scale ratio e) bboxies

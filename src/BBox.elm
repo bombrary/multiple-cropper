@@ -1,7 +1,9 @@
 module BBox exposing (..)
 
+import Vec as V exposing (Vec)
 
-type BBoxPosition
+
+type Anchor
     = None
     | Center
     | Above
@@ -15,11 +17,10 @@ type BBoxPosition
 
 
 type alias BBox =
-    { x : Float
-    , y : Float
-    , width : Float
-    , height : Float
-    , hold : BBoxPosition
+    { s : Vec
+    , t : Vec
+    , holdPos : Anchor
+    , clippedImg : Maybe String
     }
 
 
@@ -31,190 +32,34 @@ type alias Position =
     }
 
 
-transform : Position -> BBoxPosition -> BBox -> BBox
-transform { x, y, dx, dy } pos bbox =
-    let
-        ( sx, sy ) =
-            ( bbox.x, bbox.y )
-
-        ( ex, ey ) =
-            ( sx + bbox.width, sy + bbox.height )
-
-        new =
-            case pos of
-                Center ->
-                    { sx = sx + dx
-                    , sy = sy + dy
-                    , ex = ex + dx
-                    , ey = ey + dy
-                    }
-
-                Above ->
-                    { sx = sx
-                    , sy = y
-                    , ex = ex
-                    , ey = ey
-                    }
-
-                Right ->
-                    { sx = sx
-                    , sy = sy
-                    , ex = x
-                    , ey = ey
-                    }
-
-                Bottom ->
-                    { sx = sx
-                    , sy = sy
-                    , ex = ex
-                    , ey = y
-                    }
-
-                Left ->
-                    { sx = x
-                    , sy = sy
-                    , ex = ex
-                    , ey = ey
-                    }
-
-                AboveLeft ->
-                    { sx = x
-                    , sy = y
-                    , ex = ex
-                    , ey = ey
-                    }
-
-                AboveRight ->
-                    { sx = sx
-                    , sy = y
-                    , ex = x
-                    , ey = ey
-                    }
-
-                BottomRight ->
-                    { sx = sx
-                    , sy = sy
-                    , ex = x
-                    , ey = y
-                    }
-
-                BottomLeft ->
-                    { sx = x
-                    , sy = sy
-                    , ex = ex
-                    , ey = y
-                    }
-
-                _ ->
-                    { sx = sx
-                    , sy = sy
-                    , ex = ex
-                    , ey = ey
-                    }
-    in
-    { bbox
-        | x = new.sx
-        , y = new.sy
-        , width = new.ex - new.sx
-        , height = new.ey - new.sy
-    }
+width : BBox -> Float
+width { s, t } =
+    (V.abs <| V.sub t s).x
 
 
-nextPosition : Position -> BBoxPosition -> BBox -> BBoxPosition
-nextPosition { dx, dy } pos { x, y, height, width } =
-    let
-        ( sx, sy ) =
-            ( x, y )
-
-        ( ex, ey ) =
-            ( sx + width, sy + height )
-    in
-    case pos of
-        Above ->
-            if sy > ey then
-                Bottom
-
-            else
-                Above
-
-        Right ->
-            if sy < ey then
-                Left
-
-            else
-                Right
-
-        Bottom ->
-            if sy < ey then
-                Above
-
-            else
-                Bottom
-
-        Left ->
-            if sx > ex then
-                Right
-
-            else
-                Left
-
-        _ ->
-            pos
+height : BBox -> Float
+height { s, t } =
+    (V.abs <| V.sub t s).y
 
 
 normalize : BBox -> BBox
-normalize { x, y, width, height, hold } =
-    let
-        list =
-            List.sort
-                [ ( x, y )
-                , ( x + width, y )
-                , ( x, y + height )
-                , ( x + width, y + height )
-                ]
-    in
-    case list of
-        [ a, b, c, d ] ->
-            let
-                ( x0, y0 ) =
-                    a
-
-                ( x1, y1 ) =
-                    d
-
-                ( newW, newH ) =
-                    ( x1 - x0, y1 - y0 )
-            in
-            BBox x0 y0 newW newH hold
-
-        _ ->
-            BBox x y width height hold
-
-
-scale : ( Float, Float ) -> BBox -> BBox
-scale ratio b =
-    let
-        ( rw, rh ) =
-            ratio
-    in
-    { b
-        | x = b.x * rw
-        , y = b.y * rh
-        , width = b.width * rw
-        , height = b.height * rh
+normalize ({ s, t } as box) =
+    { box
+        | s = V.min s t
+        , t = V.max s t
     }
 
 
-bbox0 : BBox
-bbox0 =
-    BBox 100 50 50 50 None
+scale : Float -> BBox -> BBox
+scale r ({ s, t } as box) =
+    { box
+        | s = V.scale r s
+        , t = V.scale r t
+    }
 
 
-bbox1 : BBox
-bbox1 =
-    BBox 20 10 12 46 None
 
-
-bbox2 : BBox
-bbox2 =
-    BBox 200 10 12 46 None
+{-
+   transform : Position -> Anchor -> BBox -> BBox
+   nextPosition : Position -> Anchor -> BBox -> Anchor
+-}

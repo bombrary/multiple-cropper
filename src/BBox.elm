@@ -3,33 +3,44 @@ module BBox exposing (..)
 import Vec as V exposing (Vec)
 
 
+type alias Mouse =
+    { x : Float
+    , y : Float
+    , dx : Float
+    , dy : Float
+    }
+
+
 type Anchor
-    = None
-    | Center
+    = Inner
     | Above
     | Right
-    | Bottom
+    | Below
     | Left
     | AboveLeft
     | AboveRight
-    | BottomRight
-    | BottomLeft
+    | BelowRight
+    | BelowLeft
 
 
 type alias BBox =
     { s : Vec
     , t : Vec
-    , holdPos : Anchor
+    , name : String
     , clippedImg : Maybe String
     }
 
 
-bbox : ( Float, Float ) -> ( Float, Float ) -> BBox
-bbox s t =
+type alias BBoxOrigin =
+    { s : Vec
+    , t : Vec
+    }
+
+
+bboxOrigin : ( Float, Float ) -> ( Float, Float ) -> BBoxOrigin
+bboxOrigin s t =
     { s = V.fromTuple s
     , t = V.fromTuple t
-    , holdPos = None
-    , clippedImg = Nothing
     }
 
 
@@ -67,8 +78,53 @@ scale r ({ s, t } as box) =
     }
 
 
+transform : Mouse -> Anchor -> BBox -> BBox
+transform { dx, dy } anchor box =
+    case anchor of
+        Inner ->
+            { box
+                | s = V.add box.s (Vec dx dy)
+                , t = V.add box.t (Vec dx dy)
+            }
 
-{-
-   transform : Position -> Anchor -> BBox -> BBox
-   nextPosition : Position -> Anchor -> BBox -> Anchor
--}
+        Above ->
+            { box
+                | s = V.add box.s (Vec 0 dy)
+            }
+
+        Right ->
+            { box
+                | t = V.add box.t (Vec dx 0)
+            }
+
+        Below ->
+            { box
+                | t = V.add box.t (Vec 0 dy)
+            }
+
+        Left ->
+            { box
+                | s = V.add box.s (Vec dx 0)
+            }
+
+        AboveLeft ->
+            { box
+                | s = V.add box.s (Vec dx dy)
+            }
+
+        AboveRight ->
+            { box
+                | s = V.add box.s (Vec 0 dy)
+                , t = V.add box.t (Vec dx 0)
+            }
+
+        BelowRight ->
+            { box
+                | t = V.add box.t (Vec dx dy)
+            }
+
+        BelowLeft ->
+            { box
+                | s = V.add box.s (Vec dx 0)
+                , t = V.add box.t (Vec 0 dy)
+            }

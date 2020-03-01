@@ -11,8 +11,14 @@ type alias Id =
 type alias BBoxies =
     { entities : Dict Id BBox
     , select : Maybe Id
-    , hold : Maybe Id
+    , hold : Maybe HoldInfo
     , nextId : Id
+    }
+
+
+type alias HoldInfo =
+    { id : Id
+    , anchor : Anchor
     }
 
 
@@ -25,35 +31,35 @@ empty =
     }
 
 
-toggleSelect : Id -> BBoxies -> BBoxies
+toggleSelect : Maybe Id -> BBoxies -> BBoxies
 toggleSelect id boxies =
-    case boxies.select of
-        Nothing ->
-            { boxies | select = Just id }
-
-        Just _ ->
-            { boxies | select = Nothing }
+    { boxies | select = id }
 
 
-toggleHold : Id -> BBoxies -> BBoxies
-toggleHold id boxies =
-    case boxies.hold of
-        Nothing ->
-            { boxies | hold = Just id }
-
-        Just _ ->
-            { boxies | hold = Nothing }
+toggleHold : Maybe HoldInfo -> BBoxies -> BBoxies
+toggleHold info boxies =
+    { boxies | hold = info }
 
 
-fromList : List BBox -> BBoxies
-fromList xs =
+fromList : List BBoxOrigin -> BBoxies
+fromList origins =
     let
         len =
-            List.length xs
+            List.length origins
     in
     { entities =
         Dict.fromList <|
-            List.map2 Tuple.pair (List.range 0 (len - 1)) xs
+            List.indexedMap
+                (\i origin ->
+                    ( i
+                    , { s = origin.s
+                      , t = origin.t
+                      , name = String.fromInt i ++ ".png"
+                      , clippedImg = Nothing
+                      }
+                    )
+                )
+                origins
     , nextId = len
     , select = Nothing
     , hold = Nothing
@@ -110,11 +116,35 @@ toList { entities } =
     Dict.toList entities
 
 
-toMappedList : (Id -> BBox -> a) -> BBoxies -> List a
-toMappedList f { entities } =
-    Dict.values <| Dict.map f entities
+toListWith : (Bool -> Id -> BBox -> a) -> BBoxies -> List a
+toListWith f { entities, select } =
+    let
+        isSelected id =
+            case select of
+                Nothing ->
+                    False
+
+                Just selectedId ->
+                    id == selectedId
+    in
+    Dict.values <|
+        Dict.map
+            (\id bbox -> f (isSelected id) id bbox)
+            entities
 
 
 scaleAll : Float -> BBoxies -> BBoxies
 scaleAll ratio bboxies =
     map (\i e -> scale ratio e) bboxies
+
+
+updateHeldBox : Mouse -> BBoxies -> BBoxies
+updateHeldBox mouse ({ hold } as bboxies) =
+    case hold of
+        Nothing ->
+            bboxies
+
+        Just { id, anchor } ->
+            update id
+                (transform mouse anchor)
+                bboxies

@@ -9,14 +9,14 @@ type alias Vec =
 
 add : Vec -> Vec -> Vec
 add v1 v2 =
-    { x = v1.x + v2.y
+    { x = v1.x + v2.x
     , y = v1.y + v2.y
     }
 
 
 sub : Vec -> Vec -> Vec
 sub v1 v2 =
-    { x = v1.x - v2.y
+    { x = v1.x - v2.x
     , y = v1.y - v2.y
     }
 

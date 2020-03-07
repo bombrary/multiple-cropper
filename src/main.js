@@ -6427,6 +6427,45 @@ var $author$project$Main$clippedHeldImageCmd = function (model) {
 		return A2($author$project$Main$clippedImageCmd, id, model);
 	}
 };
+var $elm$core$Maybe$andThen = F2(
+	function (callback, maybeValue) {
+		if (maybeValue.$ === 'Just') {
+			var value = maybeValue.a;
+			return callback(value);
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$BBoxies$getSelectedBox = function (_v0) {
+	var entities = _v0.entities;
+	var select = _v0.select;
+	return A2(
+		$elm$core$Maybe$andThen,
+		function (id) {
+			return A2($elm$core$Dict$get, id, entities);
+		},
+		select);
+};
+var $author$project$Main$copyBox = function (model) {
+	var image = model.image;
+	var boxies = model.boxies;
+	var _v0 = $author$project$BBoxies$getSelectedBox(boxies);
+	if (_v0.$ === 'Nothing') {
+		return model;
+	} else {
+		var s = _v0.a.s;
+		var t = _v0.a.t;
+		var newBox = A2(
+			$author$project$BBox$bboxOrigin,
+			$author$project$Vec$toTuple(s),
+			$author$project$Vec$toTuple(t));
+		return _Utils_update(
+			model,
+			{
+				boxies: A2($author$project$BBoxies$add, newBox, boxies)
+			});
+	}
+};
 var $author$project$BBoxies$empty = {entities: $elm$core$Dict$empty, hold: $elm$core$Maybe$Nothing, nextId: 0, select: $elm$core$Maybe$Nothing};
 var $elm$file$File$Select$file = F2(
 	function (mimes, toMsg) {
@@ -7150,15 +7189,6 @@ var $author$project$Zip$FileEntry$fromFiles = function (files) {
 		offset: $elm$core$List$sum(fileWidths)
 	};
 };
-var $elm$core$Maybe$andThen = F2(
-	function (callback, maybeValue) {
-		if (maybeValue.$ === 'Just') {
-			var value = maybeValue.a;
-			return callback(value);
-		} else {
-			return $elm$core$Maybe$Nothing;
-		}
-	});
 var $elm$bytes$Bytes$Decode$Done = function (a) {
 	return {$: 'Done', a: a};
 };
@@ -8087,6 +8117,12 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					newModel,
 					A2($author$project$Main$clippedImageCmd, id, newModel));
+			case 'CopyBox':
+				var newModel = $author$project$Main$copyBox(model);
+				var id = model.boxies.nextId;
+				return _Utils_Tuple2(
+					newModel,
+					A2($author$project$Main$clippedImageCmd, id, newModel));
 			case 'NameChanged':
 				var id = msg.a;
 				var newName = msg.b;
@@ -8147,11 +8183,62 @@ var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
 var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
-var $author$project$Main$Box = F3(
-	function (isSelected, id, bbox) {
-		return {bbox: bbox, id: id, isSelected: isSelected};
-	});
 var $elm$svg$Svg$g = $elm$svg$Svg$trustedNode('g');
+var $author$project$Main$makeBox = F3(
+	function (isSelected, id, bbox) {
+		var w = $author$project$BBox$width(bbox);
+		var h = $author$project$BBox$height(bbox);
+		return {
+			bbox: bbox,
+			height: h,
+			id: id,
+			isSelected: isSelected,
+			r0: A2($author$project$Vec$Vec, 0, 0),
+			r1: A2($author$project$Vec$Vec, w, 0),
+			r2: A2($author$project$Vec$Vec, w, h),
+			r3: A2($author$project$Vec$Vec, 0, h),
+			width: w
+		};
+	});
+var $elm$svg$Svg$Attributes$transform = _VirtualDom_attribute('transform');
+var $author$project$Vec$toString = function (_v0) {
+	var x = _v0.x;
+	var y = _v0.y;
+	return $elm$core$String$fromFloat(x) + (',' + $elm$core$String$fromFloat(y));
+};
+var $author$project$Main$translate = function (v) {
+	return 'translate(' + ($author$project$Vec$toString(v) + ')');
+};
+var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
+var $author$project$Main$dLineTo = function (v) {
+	return 'L' + $author$project$Vec$toString(v);
+};
+var $author$project$Main$dMoveTo = function (v) {
+	return 'M' + $author$project$Vec$toString(v);
+};
+var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
+var $elm$svg$Svg$Attributes$opacity = _VirtualDom_attribute('opacity');
+var $elm$svg$Svg$path = $elm$svg$Svg$trustedNode('path');
+var $author$project$Main$viewBoxBg = F2(
+	function (model, _v0) {
+		var id = _v0.id;
+		var bbox = _v0.bbox;
+		var r0 = _v0.r0;
+		var r1 = _v0.r1;
+		var r2 = _v0.r2;
+		var r3 = _v0.r3;
+		return A2(
+			$elm$svg$Svg$path,
+			_List_fromArray(
+				[
+					$elm$svg$Svg$Attributes$d(
+					$author$project$Main$dMoveTo(r0) + ($author$project$Main$dLineTo(r1) + ($author$project$Main$dLineTo(r2) + ($author$project$Main$dLineTo(r3) + ' Z')))),
+					$elm$svg$Svg$Attributes$fill('#333'),
+					$elm$svg$Svg$Attributes$opacity('0.3'),
+					A2($elm$html$Html$Attributes$style, 'cursor', 'move')
+				]),
+			_List_Nil);
+	});
 var $author$project$Main$DragStarted = function (a) {
 	return {$: 'DragStarted', a: a};
 };
@@ -8160,44 +8247,28 @@ var $author$project$BBoxies$HoldInfo = F2(
 		return {anchor: anchor, id: id};
 	});
 var $author$project$BBox$Inner = {$: 'Inner'};
-var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
-var $author$project$Vec$toString = function (_v0) {
-	var x = _v0.x;
-	var y = _v0.y;
-	return $elm$core$String$fromFloat(x) + (',' + $elm$core$String$fromFloat(y));
-};
-var $author$project$Main$dLineTo = function (v) {
-	return 'L' + $author$project$Vec$toString(v);
-};
-var $author$project$Main$dMoveTo = function (v) {
-	return 'M' + $author$project$Vec$toString(v);
-};
-var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
 var $elm$svg$Svg$Events$onMouseDown = function (msg) {
 	return A2(
 		$elm$html$Html$Events$on,
 		'mousedown',
 		$elm$json$Json$Decode$succeed(msg));
 };
-var $elm$svg$Svg$Attributes$opacity = _VirtualDom_attribute('opacity');
-var $elm$svg$Svg$path = $elm$svg$Svg$trustedNode('path');
 var $author$project$Main$viewBoxBody = F2(
 	function (model, _v0) {
 		var id = _v0.id;
 		var bbox = _v0.bbox;
-		var _v1 = bbox;
-		var s = _v1.s;
-		var t = _v1.t;
-		var s_ = {x: t.x, y: s.y};
-		var t_ = {x: s.x, y: t.y};
+		var r0 = _v0.r0;
+		var r1 = _v0.r1;
+		var r2 = _v0.r2;
+		var r3 = _v0.r3;
 		return A2(
 			$elm$svg$Svg$path,
 			_List_fromArray(
 				[
 					$elm$svg$Svg$Attributes$d(
-					$author$project$Main$dMoveTo(s) + ($author$project$Main$dLineTo(s_) + ($author$project$Main$dLineTo(t) + ($author$project$Main$dLineTo(t_) + ' Z')))),
-					$elm$svg$Svg$Attributes$fill('#333'),
-					$elm$svg$Svg$Attributes$opacity('0.3'),
+					$author$project$Main$dMoveTo(r0) + ($author$project$Main$dLineTo(r1) + ($author$project$Main$dLineTo(r2) + ($author$project$Main$dLineTo(r3) + ' Z')))),
+					$elm$svg$Svg$Attributes$fill('#f0f'),
+					$elm$svg$Svg$Attributes$opacity('0'),
 					$elm$svg$Svg$Events$onMouseDown(
 					$author$project$Main$DragStarted(
 						A2($author$project$BBoxies$HoldInfo, id, $author$project$BBox$Inner))),
@@ -8215,18 +8286,16 @@ var $author$project$Main$CornerView = F6(
 	});
 var $author$project$Main$cornerViews = function (box) {
 	var isSelected = box.isSelected;
-	var bbox = box.bbox;
+	var r0 = box.r0;
+	var r1 = box.r1;
+	var r2 = box.r2;
+	var r3 = box.r3;
 	var color = isSelected ? '#f80' : '#333';
-	var _v0 = bbox;
-	var s = _v0.s;
-	var t = _v0.t;
-	var s_ = {x: t.x, y: s.y};
-	var t_ = {x: s.x, y: t.y};
 	return _List_fromArray(
 		[
 			A6(
 			$author$project$Main$CornerView,
-			s,
+			r0,
 			A2($author$project$Vec$Vec, -2, -2),
 			4,
 			color,
@@ -8234,7 +8303,7 @@ var $author$project$Main$cornerViews = function (box) {
 			$author$project$BBox$AboveLeft),
 			A6(
 			$author$project$Main$CornerView,
-			s_,
+			r1,
 			A2($author$project$Vec$Vec, -2, -2),
 			4,
 			color,
@@ -8242,7 +8311,7 @@ var $author$project$Main$cornerViews = function (box) {
 			$author$project$BBox$AboveRight),
 			A6(
 			$author$project$Main$CornerView,
-			t,
+			r2,
 			A2($author$project$Vec$Vec, -2, -2),
 			4,
 			color,
@@ -8250,7 +8319,7 @@ var $author$project$Main$cornerViews = function (box) {
 			$author$project$BBox$BelowRight),
 			A6(
 			$author$project$Main$CornerView,
-			t_,
+			r3,
 			A2($author$project$Vec$Vec, -2, -2),
 			4,
 			color,
@@ -8284,10 +8353,6 @@ var $author$project$Main$styleCursor = function (anchor) {
 		}
 	}();
 	return A2($elm$html$Html$Attributes$style, 'cursor', cursor);
-};
-var $elm$svg$Svg$Attributes$transform = _VirtualDom_attribute('transform');
-var $author$project$Main$translate = function (v) {
-	return 'translate(' + ($author$project$Vec$toString(v) + ')');
 };
 var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
 var $elm$svg$Svg$Attributes$x = _VirtualDom_attribute('x');
@@ -8346,18 +8411,17 @@ var $author$project$BBox$Right = {$: 'Right'};
 var $author$project$Main$edgeViews = function (box) {
 	var bbox = box.bbox;
 	var isSelected = box.isSelected;
+	var r0 = box.r0;
+	var r1 = box.r1;
+	var r2 = box.r2;
+	var r3 = box.r3;
 	var color = isSelected ? '#f80' : '#333';
-	var _v0 = bbox;
-	var s = _v0.s;
-	var t = _v0.t;
-	var s_ = {x: t.x, y: s.y};
-	var t_ = {x: s.x, y: t.y};
 	return _List_fromArray(
 		[
-			A5($author$project$Main$EdgeView, s, s_, color, box, $author$project$BBox$Above),
-			A5($author$project$Main$EdgeView, s_, t, color, box, $author$project$BBox$Right),
-			A5($author$project$Main$EdgeView, t, t_, color, box, $author$project$BBox$Below),
-			A5($author$project$Main$EdgeView, t_, s, color, box, $author$project$BBox$Left)
+			A5($author$project$Main$EdgeView, r0, r1, color, box, $author$project$BBox$Above),
+			A5($author$project$Main$EdgeView, r1, r2, color, box, $author$project$BBox$Right),
+			A5($author$project$Main$EdgeView, r2, r3, color, box, $author$project$BBox$Below),
+			A5($author$project$Main$EdgeView, r3, r0, color, box, $author$project$BBox$Left)
 		]);
 };
 var $elm$svg$Svg$Attributes$stroke = _VirtualDom_attribute('stroke');
@@ -8407,13 +8471,86 @@ var $author$project$Main$viewBoxEdges = F2(
 				$author$project$Main$viewBoxEdge(model),
 				$author$project$Main$edgeViews(box)));
 	});
+var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
+var $elm$svg$Svg$Attributes$cx = _VirtualDom_attribute('cx');
+var $elm$svg$Svg$Attributes$cy = _VirtualDom_attribute('cy');
+var $elm$svg$Svg$Attributes$dominantBaseline = _VirtualDom_attribute('dominant-baseline');
+var $elm$svg$Svg$Attributes$r = _VirtualDom_attribute('r');
+var $elm$core$Basics$sqrt = _Basics_sqrt;
+var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
+var $elm$svg$Svg$text = $elm$virtual_dom$VirtualDom$text;
+var $elm$svg$Svg$Attributes$textAnchor = _VirtualDom_attribute('text-anchor');
+var $elm$svg$Svg$text_ = $elm$svg$Svg$trustedNode('text');
+var $author$project$Main$viewBoxLabel = F2(
+	function (model, _v0) {
+		var id = _v0.id;
+		var bbox = _v0.bbox;
+		var _v1 = model.image;
+		if (_v1.$ === 'Err') {
+			return A2($elm$svg$Svg$g, _List_Nil, _List_Nil);
+		} else {
+			var size = _v1.a.size;
+			var width = $author$project$BBox$width(bbox);
+			var height = $author$project$BBox$height(bbox);
+			var r = (A2($elm$core$Basics$min, width, height) / 2) - 10;
+			var s = 0.3 * $elm$core$Basics$sqrt(r);
+			return A2(
+				$elm$svg$Svg$g,
+				_List_fromArray(
+					[
+						$elm$svg$Svg$Attributes$transform(
+						$author$project$Main$translate(
+							A2($author$project$Vec$Vec, width / 2, height / 2))),
+						$elm$svg$Svg$Attributes$opacity('0.7')
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$elm$svg$Svg$circle,
+						_List_fromArray(
+							[
+								$elm$svg$Svg$Attributes$cx('0'),
+								$elm$svg$Svg$Attributes$cy('0'),
+								$elm$svg$Svg$Attributes$fill('none'),
+								$elm$svg$Svg$Attributes$stroke('white'),
+								$elm$svg$Svg$Attributes$strokeWidth('2'),
+								$elm$svg$Svg$Attributes$r(
+								$elm$core$String$fromFloat(r))
+							]),
+						_List_Nil),
+						A2(
+						$elm$svg$Svg$text_,
+						_List_fromArray(
+							[
+								$elm$svg$Svg$Attributes$style('user-select: none;'),
+								$elm$svg$Svg$Attributes$transform(
+								'scale(' + ($elm$core$String$fromFloat(s) + ')')),
+								$elm$svg$Svg$Attributes$textAnchor('middle'),
+								$elm$svg$Svg$Attributes$dominantBaseline('central'),
+								$elm$svg$Svg$Attributes$fill('white')
+							]),
+						_List_fromArray(
+							[
+								$elm$svg$Svg$text(
+								$elm$core$String$fromInt(id))
+							]))
+					]));
+		}
+	});
 var $author$project$Main$viewBox = F2(
 	function (model, box) {
+		var bbox = box.bbox;
 		return A2(
 			$elm$svg$Svg$g,
-			_List_Nil,
 			_List_fromArray(
 				[
+					$elm$svg$Svg$Attributes$transform(
+					$author$project$Main$translate(bbox.s))
+				]),
+			_List_fromArray(
+				[
+					A2($author$project$Main$viewBoxBg, model, box),
+					A2($author$project$Main$viewBoxLabel, model, box),
 					A2($author$project$Main$viewBoxBody, model, box),
 					A2($author$project$Main$viewBoxEdges, model, box),
 					A2($author$project$Main$viewBoxCorners, model, box)
@@ -8430,7 +8567,7 @@ var $author$project$Main$viewBoxies = function (model) {
 		A2(
 			$elm$core$List$map,
 			$author$project$Main$viewBox(model),
-			A2($author$project$BBoxies$toListWith, $author$project$Main$Box, boxies)));
+			A2($author$project$BBoxies$toListWith, $author$project$Main$makeBox, boxies)));
 };
 var $elm$svg$Svg$image = $elm$svg$Svg$trustedNode('image');
 var $elm$svg$Svg$Attributes$xlinkHref = function (value) {
@@ -8500,6 +8637,7 @@ var $author$project$Main$viewMain = function (model) {
 	}
 };
 var $author$project$Main$AddBox = {$: 'AddBox'};
+var $author$project$Main$CopyBox = {$: 'CopyBox'};
 var $author$project$Main$Download = {$: 'Download'};
 var $author$project$Main$ImageRequested = {$: 'ImageRequested'};
 var $elm$html$Html$button = _VirtualDom_node('button');
@@ -8615,7 +8753,7 @@ var $author$project$Main$viewClippedImages = function (model) {
 		A2(
 			$elm$core$List$map,
 			$author$project$Main$viewClippedImage(model),
-			A2($author$project$BBoxies$toListWith, $author$project$Main$Box, boxies)));
+			A2($author$project$BBoxies$toListWith, $author$project$Main$makeBox, boxies)));
 };
 var $author$project$Main$viewSide = function (model) {
 	return A2(
@@ -8645,6 +8783,16 @@ var $author$project$Main$viewSide = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text('Add')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Main$CopyBox)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Copy')
 					])),
 				$author$project$Main$viewClippedImages(model),
 				A2(

@@ -88,6 +88,7 @@ type Msg
     | ImageInfoReceived JE.Value
     | ClippedImageReceived JE.Value
     | AddBox
+    | CopyBox
     | NameChanged BB.Id String
     | Download
 
@@ -171,6 +172,18 @@ update msg model =
             let
                 newModel =
                     addBox model
+
+                id =
+                    model.boxies.nextId
+            in
+            ( newModel
+            , clippedImageCmd id newModel
+            )
+
+        CopyBox ->
+            let
+                newModel =
+                    copyBox model
 
                 id =
                     model.boxies.nextId
@@ -327,6 +340,22 @@ addBox ({ image } as model) =
             { model | boxies = BB.add newBox model.boxies }
 
 
+copyBox : Model -> Model
+copyBox ({ image, boxies } as model) =
+    case BB.getSelectedBox boxies of
+        Nothing ->
+            model
+
+        Just { s, t } ->
+            let
+                newBox =
+                    BB.bboxOrigin
+                        (V.toTuple s)
+                        (V.toTuple t)
+            in
+            { model | boxies = BB.add newBox boxies }
+
+
 scaleForImg : Rect -> BB.BBox -> BB.BBox
 scaleForImg rect ({ s, t } as bbox) =
     let
@@ -453,41 +482,73 @@ viewBoxies : Model -> Svg Msg
 viewBoxies ({ boxies } as model) =
     S.g [ SA.class "boxies" ] <|
         List.map (viewBox model) <|
-            BB.toListWith Box boxies
+            BB.toListWith makeBox boxies
+
+
+makeBox : Bool -> BB.Id -> BB.BBox -> Box
+makeBox isSelected id bbox =
+    let
+        w =
+            BB.width bbox
+
+        h =
+            BB.height bbox
+    in
+    { isSelected = isSelected
+    , id = id
+    , bbox = bbox
+    , width = w
+    , height = h
+    , r0 = Vec 0 0
+    , r1 = Vec w 0
+    , r2 = Vec w h
+    , r3 = Vec 0 h
+    }
 
 
 type alias Box =
     { isSelected : Bool
     , id : BB.Id
     , bbox : BB.BBox
+    , width : Float
+    , height : Float
+    , r0 : Vec
+    , r1 : Vec
+    , r2 : Vec
+    , r3 : Vec
     }
 
 
 viewBox : Model -> Box -> Svg Msg
-viewBox model box =
-    S.g []
-        [ viewBoxBody model box
+viewBox model ({ bbox } as box) =
+    S.g
+        [ SA.transform <| translate bbox.s
+        ]
+        [ viewBoxBg model box
+        , viewBoxLabel model box
+        , viewBoxBody model box
         , viewBoxEdges model box
         , viewBoxCorners model box
         ]
 
 
-viewBoxBody : Model -> Box -> Svg Msg
-viewBoxBody model { id, bbox } =
-    let
-        { s, t } =
-            bbox
-
-        s_ =
-            { x = t.x, y = s.y }
-
-        t_ =
-            { x = s.x, y = t.y }
-    in
+viewBoxBg : Model -> Box -> Svg Msg
+viewBoxBg model { id, bbox, r0, r1, r2, r3 } =
     S.path
-        [ SA.d <| dMoveTo s ++ dLineTo s_ ++ dLineTo t ++ dLineTo t_ ++ " Z"
+        [ SA.d <| dMoveTo r0 ++ dLineTo r1 ++ dLineTo r2 ++ dLineTo r3 ++ " Z"
         , SA.fill "#333"
         , SA.opacity "0.3"
+        , style "cursor" "move"
+        ]
+        []
+
+
+viewBoxBody : Model -> Box -> Svg Msg
+viewBoxBody model { id, bbox, r0, r1, r2, r3 } =
+    S.path
+        [ SA.d <| dMoveTo r0 ++ dLineTo r1 ++ dLineTo r2 ++ dLineTo r3 ++ " Z"
+        , SA.fill "#f0f"
+        , SA.opacity "0"
         , SE.onMouseDown <|
             DragStarted (BB.HoldInfo id BB.Inner)
         , style "cursor" "move"
@@ -505,17 +566,8 @@ type alias EdgeView =
 
 
 edgeViews : Box -> List EdgeView
-edgeViews ({ bbox, isSelected } as box) =
+edgeViews ({ bbox, isSelected, r0, r1, r2, r3 } as box) =
     let
-        { s, t } =
-            bbox
-
-        s_ =
-            { x = t.x, y = s.y }
-
-        t_ =
-            { x = s.x, y = t.y }
-
         color =
             if isSelected then
                 "#f80"
@@ -523,10 +575,10 @@ edgeViews ({ bbox, isSelected } as box) =
             else
                 "#333"
     in
-    [ EdgeView s s_ color box BB.Above
-    , EdgeView s_ t color box BB.Right
-    , EdgeView t t_ color box BB.Below
-    , EdgeView t_ s color box BB.Left
+    [ EdgeView r0 r1 color box BB.Above
+    , EdgeView r1 r2 color box BB.Right
+    , EdgeView r2 r3 color box BB.Below
+    , EdgeView r3 r0 color box BB.Left
     ]
 
 
@@ -552,6 +604,51 @@ viewBoxEdge model { from, to, color, anchor, parent } =
         ]
 
 
+viewBoxLabel : Model -> Box -> Svg Msg
+viewBoxLabel model { id, bbox } =
+    case model.image of
+        Err _ ->
+            S.g [] []
+
+        Ok { size } ->
+            let
+                width =
+                    BB.width bbox
+
+                height =
+                    BB.height bbox
+
+                r =
+                    Basics.min width height / 2 - 10
+
+                s =
+                    0.3 * Basics.sqrt r
+            in
+            S.g
+                [ SA.transform <| translate (Vec (width / 2) (height / 2))
+                , SA.opacity "0.7"
+                ]
+                [ S.circle
+                    [ SA.cx "0"
+                    , SA.cy "0"
+                    , SA.fill "none"
+                    , SA.stroke "white"
+                    , SA.strokeWidth "2"
+                    , SA.r (String.fromFloat r)
+                    ]
+                    []
+                , S.text_
+                    [ SA.style "user-select: none;"
+                    , SA.transform <| "scale(" ++ String.fromFloat s ++ ")"
+                    , SA.textAnchor "middle"
+                    , SA.dominantBaseline "central"
+                    , SA.fill "white"
+                    ]
+                    [ S.text (String.fromInt id)
+                    ]
+                ]
+
+
 type alias CornerView =
     { pos : Vec
     , diff : Vec
@@ -563,17 +660,8 @@ type alias CornerView =
 
 
 cornerViews : Box -> List CornerView
-cornerViews ({ isSelected, bbox } as box) =
+cornerViews ({ isSelected, r0, r1, r2, r3 } as box) =
     let
-        { s, t } =
-            bbox
-
-        s_ =
-            { x = t.x, y = s.y }
-
-        t_ =
-            { x = s.x, y = t.y }
-
         color =
             if isSelected then
                 "#f80"
@@ -581,10 +669,10 @@ cornerViews ({ isSelected, bbox } as box) =
             else
                 "#333"
     in
-    [ CornerView s (Vec -2 -2) 4 color box BB.AboveLeft
-    , CornerView s_ (Vec -2 -2) 4 color box BB.AboveRight
-    , CornerView t (Vec -2 -2) 4 color box BB.BelowRight
-    , CornerView t_ (Vec -2 -2) 4 color box BB.BelowLeft
+    [ CornerView r0 (Vec -2 -2) 4 color box BB.AboveLeft
+    , CornerView r1 (Vec -2 -2) 4 color box BB.AboveRight
+    , CornerView r2 (Vec -2 -2) 4 color box BB.BelowRight
+    , CornerView r3 (Vec -2 -2) 4 color box BB.BelowLeft
     ]
 
 
@@ -671,6 +759,7 @@ viewSide model =
         ]
         [ button [ onClick ImageRequested ] [ text "Load Image" ]
         , button [ onClick AddBox ] [ text "Add" ]
+        , button [ onClick CopyBox ] [ text "Copy" ]
         , viewClippedImages model
         , button [ onClick Download ] [ text "Download" ]
         ]
@@ -700,7 +789,7 @@ viewClippedImages ({ boxies } as model) =
     div [ class "clipped-images" ] <|
         List.map
             (viewClippedImage model)
-            (BB.toListWith Box boxies)
+            (BB.toListWith makeBox boxies)
 
 
 viewClippedImage : Model -> Box -> Html Msg

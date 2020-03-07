@@ -6102,13 +6102,7 @@ var $author$project$Main$addBox = function (model) {
 		return _Utils_update(
 			model,
 			{
-				boxies: A2(
-					$author$project$BBoxies$add,
-					A2(
-						$author$project$BBox$bboxOrigin,
-						_Utils_Tuple2(5, 252),
-						_Utils_Tuple2(307, 187)),
-					model.boxies)
+				boxies: A2($author$project$BBoxies$add, newBox, model.boxies)
 			});
 	}
 };
@@ -8044,9 +8038,7 @@ var $author$project$Main$update = F2(
 				var y = msg.b;
 				var newModel = $author$project$Main$updateHeldBox(
 					A3($author$project$Main$updateMouse, x, y, model));
-				return _Utils_Tuple2(
-					newModel,
-					$author$project$Main$clippedHeldImageCmd(newModel));
+				return _Utils_Tuple2(newModel, $elm$core$Platform$Cmd$none);
 			case 'DragEnded':
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -8054,7 +8046,7 @@ var $author$project$Main$update = F2(
 						{
 							boxies: A2($author$project$BBoxies$toggleHold, $elm$core$Maybe$Nothing, model.boxies)
 						}),
-					$elm$core$Platform$Cmd$none);
+					$author$project$Main$clippedHeldImageCmd(model));
 			case 'ImageRequested':
 				return _Utils_Tuple2(
 					model,

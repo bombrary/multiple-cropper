@@ -126,14 +126,14 @@ update msg model =
                         |> updateHeldBox
             in
             ( newModel
-            , clippedHeldImageCmd newModel
+            , Cmd.none
             )
 
         DragEnded ->
             ( { model
                 | boxies = BB.toggleHold Nothing model.boxies
               }
-            , Cmd.none
+            , clippedHeldImageCmd model
             )
 
         ImageRequested ->
@@ -324,7 +324,7 @@ addBox ({ image } as model) =
                 newBox =
                     BB.bboxOrigin s t
             in
-            { model | boxies = BB.add (BB.bboxOrigin ( 5, 252 ) ( 307, 187 )) model.boxies }
+            { model | boxies = BB.add newBox model.boxies }
 
 
 scaleForImg : Rect -> BB.BBox -> BB.BBox

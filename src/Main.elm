@@ -671,10 +671,13 @@ viewSide model =
         ]
         [ button [ onClick ImageRequested ] [ text "Load Image" ]
         , button [ onClick AddBox ] [ text "Add" ]
-        , viewHeldBoxInfo model
         , viewClippedImages model
         , button [ onClick Download ] [ text "Download" ]
         ]
+
+
+
+-- view for Debug
 
 
 viewHeldBoxInfo : Model -> Html Msg

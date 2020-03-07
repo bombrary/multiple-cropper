@@ -1,5 +1,4 @@
 const outImages = ({ id, src, x, y, width, height}) => {
-  console.log(id, { x, y, width, height });
   const img = new Image()
   img.src = src
   img.onload = () => {

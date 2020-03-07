@@ -8625,46 +8625,6 @@ var $author$project$Main$viewClippedImages = function (model) {
 			$author$project$Main$viewClippedImage(model),
 			A2($author$project$BBoxies$toListWith, $author$project$Main$Box, boxies)));
 };
-var $author$project$BBoxies$getSelectedBox = function (_v0) {
-	var entities = _v0.entities;
-	var select = _v0.select;
-	return A2(
-		$elm$core$Maybe$andThen,
-		function (id) {
-			return A2($elm$core$Dict$get, id, entities);
-		},
-		select);
-};
-var $author$project$Main$viewHeldBoxInfo = function (model) {
-	var _v0 = $author$project$BBoxies$getSelectedBox(model.boxies);
-	if (_v0.$ === 'Nothing') {
-		return A2($elm$html$Html$div, _List_Nil, _List_Nil);
-	} else {
-		var box = _v0.a;
-		return A2(
-			$elm$html$Html$div,
-			_List_Nil,
-			_List_fromArray(
-				[
-					A2(
-					$elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text(
-							'(' + ($author$project$Vec$toString(box.s) + ')'))
-						])),
-					A2(
-					$elm$html$Html$p,
-					_List_Nil,
-					_List_fromArray(
-						[
-							$elm$html$Html$text(
-							'(' + ($author$project$Vec$toString(box.t) + ')'))
-						]))
-				]));
-	}
-};
 var $author$project$Main$viewSide = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -8694,7 +8654,6 @@ var $author$project$Main$viewSide = function (model) {
 					[
 						$elm$html$Html$text('Add')
 					])),
-				$author$project$Main$viewHeldBoxInfo(model),
 				$author$project$Main$viewClippedImages(model),
 				A2(
 				$elm$html$Html$button,

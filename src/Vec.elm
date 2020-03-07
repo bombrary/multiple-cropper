@@ -1,5 +1,7 @@
 module Vec exposing (..)
 
+import Json.Encode as JE
+
 
 type alias Vec =
     { x : Float
@@ -54,3 +56,21 @@ fromTuple t =
     { x = Tuple.first t
     , y = Tuple.second t
     }
+
+
+toTuple : Vec -> ( Float, Float )
+toTuple { x, y } =
+    ( x, y )
+
+
+encode : Vec -> JE.Value
+encode v =
+    JE.object
+        [ ( "x", JE.float v.x )
+        , ( "y", JE.float v.y )
+        ]
+
+
+toString : Vec -> String
+toString { x, y } =
+    String.fromFloat x ++ "," ++ String.fromFloat y

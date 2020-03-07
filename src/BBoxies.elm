@@ -1,7 +1,10 @@
 module BBoxies exposing (..)
 
 import BBox exposing (..)
+import Base64
+import Bytes
 import Dict as Dict exposing (Dict)
+import Zip
 
 
 type alias Id =
@@ -66,10 +69,17 @@ fromList origins =
     }
 
 
-add : BBox -> BBoxies -> BBoxies
-add entity ({ entities, nextId } as boxies) =
+add : BBoxOrigin -> BBoxies -> BBoxies
+add origin ({ entities, nextId } as boxies) =
     { boxies
-        | entities = Dict.insert nextId entity entities
+        | entities =
+            Dict.insert nextId
+                { s = origin.s
+                , t = origin.t
+                , clippedImg = Nothing
+                , name = String.fromInt nextId ++ ".png"
+                }
+                entities
         , nextId = nextId + 1
     }
 
@@ -146,5 +156,85 @@ updateHeldBox mouse ({ hold } as bboxies) =
 
         Just { id, anchor } ->
             update id
-                (transform mouse anchor)
+                (normalize << transform mouse anchor)
                 bboxies
+
+
+getSelectedBox : BBoxies -> Maybe BBox
+getSelectedBox { entities, select } =
+    Maybe.andThen (\id -> Dict.get id entities)
+        select
+
+
+getHeldBox : BBoxies -> Maybe { id : Int, box : BBox }
+getHeldBox { entities, hold } =
+    Maybe.andThen
+        (\{ id } ->
+            Maybe.map
+                (\box -> { id = id, box = box })
+                (Dict.get id entities)
+        )
+        hold
+
+
+toImages : BBoxies -> List { name : String, src : String }
+toImages boxies =
+    onlyJust <|
+        toListWith
+            (\_ id box ->
+                case box.clippedImg of
+                    Nothing ->
+                        Nothing
+
+                    Just src ->
+                        Just
+                            { name = validateName id box.name ++ ".png"
+                            , src = src
+                            }
+            )
+            boxies
+
+
+onlyJust : List (Maybe a) -> List a
+onlyJust xs =
+    List.foldr
+        (\maybeE acc ->
+            case maybeE of
+                Nothing ->
+                    acc
+
+                Just e ->
+                    e :: acc
+        )
+        []
+        xs
+
+
+toZip : BBoxies -> Bytes.Bytes
+toZip bboxies =
+    let
+        help { name, src } acc =
+            case Base64.toBytes <| String.dropLeft 22 src of
+                Nothing ->
+                    acc
+
+                Just byte ->
+                    let
+                        entry =
+                            ( name, byte )
+                    in
+                    entry :: acc
+    in
+    Zip.fromList <|
+        List.foldr help
+            []
+            (toImages bboxies)
+
+
+validateName : Id -> String -> String
+validateName id name =
+    if name == "" then
+        String.fromInt id
+
+    else
+        name

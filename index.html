@@ -27,25 +27,29 @@
         node: document.getElementById('elm'),
         flags: "img/sample.png"
       });
-      app.ports.askClippedImages.subscribe(({src, boxies}) => {
-        outImages(src, boxies);
+      app.ports.askClippedImage.subscribe((json) => {
+        outImages(json);
       });
-      app.ports.askImageSize.subscribe((url) => {
+      app.ports.askImageInfo.subscribe((src) => {
         const image = new Image()
-        image.src = url
+        image.src = src
         image.onload = () => {
-          app.ports.receiveImageSize.send({ width: image.width, height: image.height });
+          app.ports.receiveImageInfo.send(
+            { src: src
+            , width: image.width
+            , height: image.height
+            });
         }
         image.onerror = () => {
-          app.ports.failedToLoadImage.send();
+          app.ports.receiveImageInfo.send();
         }
       });
-      window.addEventListener('keydown', (e) => {
+      /*window.addEventListener('keydown', (e) => {
         app.ports.preventDefaultOnKeyDown.send({ key: e.key });
         if (e.key == "ArrowUp" || e.key == "ArrowDown") {
           e.preventDefault();
         }
-      });
+      });*/
     </script>
   </body>
 </html>

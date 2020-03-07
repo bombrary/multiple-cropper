@@ -4533,6 +4533,221 @@ function _File_toUrl(blob)
 	});
 }
 
+
+
+// BYTES
+
+function _Bytes_width(bytes)
+{
+	return bytes.byteLength;
+}
+
+var _Bytes_getHostEndianness = F2(function(le, be)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(new Uint8Array(new Uint32Array([1]))[0] === 1 ? le : be));
+	});
+});
+
+
+// ENCODERS
+
+function _Bytes_encode(encoder)
+{
+	var mutableBytes = new DataView(new ArrayBuffer($elm$bytes$Bytes$Encode$getWidth(encoder)));
+	$elm$bytes$Bytes$Encode$write(encoder)(mutableBytes)(0);
+	return mutableBytes;
+}
+
+
+// SIGNED INTEGERS
+
+var _Bytes_write_i8  = F3(function(mb, i, n) { mb.setInt8(i, n); return i + 1; });
+var _Bytes_write_i16 = F4(function(mb, i, n, isLE) { mb.setInt16(i, n, isLE); return i + 2; });
+var _Bytes_write_i32 = F4(function(mb, i, n, isLE) { mb.setInt32(i, n, isLE); return i + 4; });
+
+
+// UNSIGNED INTEGERS
+
+var _Bytes_write_u8  = F3(function(mb, i, n) { mb.setUint8(i, n); return i + 1 ;});
+var _Bytes_write_u16 = F4(function(mb, i, n, isLE) { mb.setUint16(i, n, isLE); return i + 2; });
+var _Bytes_write_u32 = F4(function(mb, i, n, isLE) { mb.setUint32(i, n, isLE); return i + 4; });
+
+
+// FLOATS
+
+var _Bytes_write_f32 = F4(function(mb, i, n, isLE) { mb.setFloat32(i, n, isLE); return i + 4; });
+var _Bytes_write_f64 = F4(function(mb, i, n, isLE) { mb.setFloat64(i, n, isLE); return i + 8; });
+
+
+// BYTES
+
+var _Bytes_write_bytes = F3(function(mb, offset, bytes)
+{
+	for (var i = 0, len = bytes.byteLength, limit = len - 4; i <= limit; i += 4)
+	{
+		mb.setUint32(offset + i, bytes.getUint32(i));
+	}
+	for (; i < len; i++)
+	{
+		mb.setUint8(offset + i, bytes.getUint8(i));
+	}
+	return offset + len;
+});
+
+
+// STRINGS
+
+function _Bytes_getStringWidth(string)
+{
+	for (var width = 0, i = 0; i < string.length; i++)
+	{
+		var code = string.charCodeAt(i);
+		width +=
+			(code < 0x80) ? 1 :
+			(code < 0x800) ? 2 :
+			(code < 0xD800 || 0xDBFF < code) ? 3 : (i++, 4);
+	}
+	return width;
+}
+
+var _Bytes_write_string = F3(function(mb, offset, string)
+{
+	for (var i = 0; i < string.length; i++)
+	{
+		var code = string.charCodeAt(i);
+		offset +=
+			(code < 0x80)
+				? (mb.setUint8(offset, code)
+				, 1
+				)
+				:
+			(code < 0x800)
+				? (mb.setUint16(offset, 0xC080 /* 0b1100000010000000 */
+					| (code >>> 6 & 0x1F /* 0b00011111 */) << 8
+					| code & 0x3F /* 0b00111111 */)
+				, 2
+				)
+				:
+			(code < 0xD800 || 0xDBFF < code)
+				? (mb.setUint16(offset, 0xE080 /* 0b1110000010000000 */
+					| (code >>> 12 & 0xF /* 0b00001111 */) << 8
+					| code >>> 6 & 0x3F /* 0b00111111 */)
+				, mb.setUint8(offset + 2, 0x80 /* 0b10000000 */
+					| code & 0x3F /* 0b00111111 */)
+				, 3
+				)
+				:
+			(code = (code - 0xD800) * 0x400 + string.charCodeAt(++i) - 0xDC00 + 0x10000
+			, mb.setUint32(offset, 0xF0808080 /* 0b11110000100000001000000010000000 */
+				| (code >>> 18 & 0x7 /* 0b00000111 */) << 24
+				| (code >>> 12 & 0x3F /* 0b00111111 */) << 16
+				| (code >>> 6 & 0x3F /* 0b00111111 */) << 8
+				| code & 0x3F /* 0b00111111 */)
+			, 4
+			);
+	}
+	return offset;
+});
+
+
+// DECODER
+
+var _Bytes_decode = F2(function(decoder, bytes)
+{
+	try {
+		return $elm$core$Maybe$Just(A2(decoder, bytes, 0).b);
+	} catch(e) {
+		return $elm$core$Maybe$Nothing;
+	}
+});
+
+var _Bytes_read_i8  = F2(function(      bytes, offset) { return _Utils_Tuple2(offset + 1, bytes.getInt8(offset)); });
+var _Bytes_read_i16 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 2, bytes.getInt16(offset, isLE)); });
+var _Bytes_read_i32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getInt32(offset, isLE)); });
+var _Bytes_read_u8  = F2(function(      bytes, offset) { return _Utils_Tuple2(offset + 1, bytes.getUint8(offset)); });
+var _Bytes_read_u16 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 2, bytes.getUint16(offset, isLE)); });
+var _Bytes_read_u32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getUint32(offset, isLE)); });
+var _Bytes_read_f32 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 4, bytes.getFloat32(offset, isLE)); });
+var _Bytes_read_f64 = F3(function(isLE, bytes, offset) { return _Utils_Tuple2(offset + 8, bytes.getFloat64(offset, isLE)); });
+
+var _Bytes_read_bytes = F3(function(len, bytes, offset)
+{
+	return _Utils_Tuple2(offset + len, new DataView(bytes.buffer, bytes.byteOffset + offset, len));
+});
+
+var _Bytes_read_string = F3(function(len, bytes, offset)
+{
+	var string = '';
+	var end = offset + len;
+	for (; offset < end;)
+	{
+		var byte = bytes.getUint8(offset++);
+		string +=
+			(byte < 128)
+				? String.fromCharCode(byte)
+				:
+			((byte & 0xE0 /* 0b11100000 */) === 0xC0 /* 0b11000000 */)
+				? String.fromCharCode((byte & 0x1F /* 0b00011111 */) << 6 | bytes.getUint8(offset++) & 0x3F /* 0b00111111 */)
+				:
+			((byte & 0xF0 /* 0b11110000 */) === 0xE0 /* 0b11100000 */)
+				? String.fromCharCode(
+					(byte & 0xF /* 0b00001111 */) << 12
+					| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 6
+					| bytes.getUint8(offset++) & 0x3F /* 0b00111111 */
+				)
+				:
+				(byte =
+					((byte & 0x7 /* 0b00000111 */) << 18
+						| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 12
+						| (bytes.getUint8(offset++) & 0x3F /* 0b00111111 */) << 6
+						| bytes.getUint8(offset++) & 0x3F /* 0b00111111 */
+					) - 0x10000
+				, String.fromCharCode(Math.floor(byte / 0x400) + 0xD800, byte % 0x400 + 0xDC00)
+				);
+	}
+	return _Utils_Tuple2(offset, string);
+});
+
+var _Bytes_decodeFailure = F2(function() { throw 0; });
+
+
+
+var _Bitwise_and = F2(function(a, b)
+{
+	return a & b;
+});
+
+var _Bitwise_or = F2(function(a, b)
+{
+	return a | b;
+});
+
+var _Bitwise_xor = F2(function(a, b)
+{
+	return a ^ b;
+});
+
+function _Bitwise_complement(a)
+{
+	return ~a;
+};
+
+var _Bitwise_shiftLeftBy = F2(function(offset, a)
+{
+	return a << offset;
+});
+
+var _Bitwise_shiftRightBy = F2(function(offset, a)
+{
+	return a >> offset;
+});
+
+var _Bitwise_shiftRightZfBy = F2(function(offset, a)
+{
+	return a >>> offset;
+});
 var $elm$core$Basics$EQ = {$: 'EQ'};
 var $elm$core$Basics$GT = {$: 'GT'};
 var $elm$core$Basics$LT = {$: 'LT'};
@@ -5488,6 +5703,9 @@ var $author$project$BBoxies$fromList = function (origins) {
 		select: $elm$core$Maybe$Nothing
 	};
 };
+var $elm$core$Basics$negate = function (n) {
+	return -n;
+};
 var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
 		{
@@ -5496,13 +5714,24 @@ var $author$project$Main$init = function (_v0) {
 					[
 						A2(
 						$author$project$BBox$bboxOrigin,
-						_Utils_Tuple2(10, 20),
-						_Utils_Tuple2(40, 100))
+						_Utils_Tuple2(0, -0.7),
+						_Utils_Tuple2(201, 47)),
+						A2(
+						$author$project$BBox$bboxOrigin,
+						_Utils_Tuple2(5, 187.6),
+						_Utils_Tuple2(307, 252.3)),
+						A2(
+						$author$project$BBox$bboxOrigin,
+						_Utils_Tuple2(48, 350),
+						_Utils_Tuple2(199, 490))
 					])),
 			image: $elm$core$Result$Err('No Image'),
 			mouse: A4($author$project$Main$Mouse, 0, 0, 0, 0)
 		},
 		$author$project$Main$askImageInfo('img/sample.png'));
+};
+var $author$project$Main$ClippedImageReceived = function (a) {
+	return {$: 'ClippedImageReceived', a: a};
 };
 var $author$project$Main$DragEnded = {$: 'DragEnded'};
 var $author$project$Main$ImageInfoReceived = function (a) {
@@ -5788,6 +6017,7 @@ var $elm$browser$Browser$Events$on = F3(
 	});
 var $elm$browser$Browser$Events$onMouseUp = A2($elm$browser$Browser$Events$on, $elm$browser$Browser$Events$Document, 'mouseup');
 var $elm$json$Json$Decode$value = _Json_decodeValue;
+var $author$project$Main$receiveClippedImage = _Platform_incomingPort('receiveClippedImage', $elm$json$Json$Decode$value);
 var $author$project$Main$receiveImageInfo = _Platform_incomingPort('receiveImageInfo', $elm$json$Json$Decode$value);
 var $author$project$Main$subscriptions = function (model) {
 	return $elm$core$Platform$Sub$batch(
@@ -5795,7 +6025,8 @@ var $author$project$Main$subscriptions = function (model) {
 			[
 				$author$project$Main$receiveImageInfo($author$project$Main$ImageInfoReceived),
 				$elm$browser$Browser$Events$onMouseUp(
-				$elm$json$Json$Decode$succeed($author$project$Main$DragEnded))
+				$elm$json$Json$Decode$succeed($author$project$Main$DragEnded)),
+				$author$project$Main$receiveClippedImage($author$project$Main$ClippedImageReceived)
 			]));
 };
 var $author$project$Main$ImageEncoded = function (a) {
@@ -5804,175 +6035,296 @@ var $author$project$Main$ImageEncoded = function (a) {
 var $author$project$Main$ImageSelected = function (a) {
 	return {$: 'ImageSelected', a: a};
 };
-var $author$project$BBoxies$empty = {entities: $elm$core$Dict$empty, hold: $elm$core$Maybe$Nothing, nextId: 0, select: $elm$core$Maybe$Nothing};
-var $elm$time$Time$Posix = function (a) {
-	return {$: 'Posix', a: a};
-};
-var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
-var $elm$file$File$Select$file = F2(
-	function (mimes, toMsg) {
-		return A2(
-			$elm$core$Task$perform,
-			toMsg,
-			_File_uploadOne(mimes));
-	});
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$json$Json$Decode$decodeValue = _Json_run;
-var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$float = _Json_decodeFloat;
-var $elm$json$Json$Decode$map3 = _Json_map3;
-var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Main$setImage = F2(
-	function (model, value) {
-		var makeImage = F3(
-			function (src, width, height) {
-				return {
-					size: {height: height, width: width},
-					src: src
-				};
-			});
-		var decoder = A4(
-			$elm$json$Json$Decode$map3,
-			makeImage,
-			A2($elm$json$Json$Decode$field, 'src', $elm$json$Json$Decode$string),
-			A2($elm$json$Json$Decode$field, 'width', $elm$json$Json$Decode$float),
-			A2($elm$json$Json$Decode$field, 'height', $elm$json$Json$Decode$float));
-		var image = function () {
-			var _v0 = A2($elm$json$Json$Decode$decodeValue, decoder, value);
-			if (_v0.$ === 'Err') {
-				var err = _v0.a;
-				return $elm$core$Result$Err(
-					$elm$json$Json$Decode$errorToString(err));
-			} else {
-				var img = _v0.a;
-				return $elm$core$Result$Ok(img);
-			}
-		}();
-		return _Utils_update(
-			model,
-			{image: image});
-	});
-var $elm$file$File$toUrl = _File_toUrl;
-var $author$project$BBoxies$toggleHold = F2(
-	function (info, boxies) {
-		return _Utils_update(
-			boxies,
-			{hold: info});
-	});
-var $author$project$BBoxies$toggleSelect = F2(
-	function (id, boxies) {
-		return _Utils_update(
-			boxies,
-			{select: id});
-	});
 var $author$project$Vec$Vec = F2(
 	function (x, y) {
 		return {x: x, y: y};
+	});
+var $author$project$BBoxies$add = F2(
+	function (origin, boxies) {
+		var entities = boxies.entities;
+		var nextId = boxies.nextId;
+		return _Utils_update(
+			boxies,
+			{
+				entities: A3(
+					$elm$core$Dict$insert,
+					nextId,
+					{
+						clippedImg: $elm$core$Maybe$Nothing,
+						name: $elm$core$String$fromInt(nextId) + '.png',
+						s: origin.s,
+						t: origin.t
+					},
+					entities),
+				nextId: nextId + 1
+			});
 	});
 var $author$project$Vec$add = F2(
 	function (v1, v2) {
 		return {x: v1.x + v2.x, y: v1.y + v2.y};
 	});
-var $author$project$BBox$transform = F3(
-	function (_v0, anchor, box) {
-		var dx = _v0.dx;
-		var dy = _v0.dy;
-		switch (anchor.$) {
-			case 'Inner':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, dx, dy)),
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, dx, dy))
-					});
-			case 'Above':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, 0, dy))
-					});
-			case 'Right':
-				return _Utils_update(
-					box,
-					{
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, dx, 0))
-					});
-			case 'Below':
-				return _Utils_update(
-					box,
-					{
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, 0, dy))
-					});
-			case 'Left':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, dx, 0))
-					});
-			case 'AboveLeft':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, dx, dy))
-					});
-			case 'AboveRight':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, 0, dy)),
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, dx, 0))
-					});
-			case 'BelowRight':
-				return _Utils_update(
-					box,
-					{
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, dx, dy))
-					});
-			default:
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, dx, 0)),
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, 0, dy))
-					});
+var $author$project$Main$svgHeight = function (_v0) {
+	var width = _v0.width;
+	var height = _v0.height;
+	return (height * 500) / width;
+};
+var $author$project$Main$svgWidth = function (rect) {
+	return 500;
+};
+var $author$project$Vec$toTuple = function (_v0) {
+	var x = _v0.x;
+	var y = _v0.y;
+	return _Utils_Tuple2(x, y);
+};
+var $author$project$Main$addBox = function (model) {
+	var image = model.image;
+	if (image.$ === 'Err') {
+		return model;
+	} else {
+		var src = image.a.src;
+		var size = image.a.size;
+		var l = 100;
+		var c = A2(
+			$author$project$Vec$Vec,
+			$author$project$Main$svgWidth(size) / 2,
+			$author$project$Main$svgHeight(size) / 2);
+		var s = $author$project$Vec$toTuple(
+			A2(
+				$author$project$Vec$add,
+				c,
+				A2($author$project$Vec$Vec, (-l) / 2, (-l) / 2)));
+		var t = $author$project$Vec$toTuple(
+			A2(
+				$author$project$Vec$add,
+				c,
+				A2($author$project$Vec$Vec, l / 2, l / 2)));
+		var newBox = A2($author$project$BBox$bboxOrigin, s, t);
+		return _Utils_update(
+			model,
+			{
+				boxies: A2(
+					$author$project$BBoxies$add,
+					A2(
+						$author$project$BBox$bboxOrigin,
+						_Utils_Tuple2(5, 252),
+						_Utils_Tuple2(307, 187)),
+					model.boxies)
+			});
+	}
+};
+var $author$project$Main$askClippedImage = _Platform_outgoingPort('askClippedImage', $elm$core$Basics$identity);
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$json$Json$Encode$float = _Json_wrap;
+var $elm$json$Json$Encode$int = _Json_wrap;
+var $elm$json$Json$Encode$object = function (pairs) {
+	return _Json_wrap(
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, obj) {
+					var k = _v0.a;
+					var v = _v0.b;
+					return A3(_Json_addField, k, v, obj);
+				}),
+			_Json_emptyObject(_Utils_Tuple0),
+			pairs));
+};
+var $author$project$Main$clippedImageProposal = function (_v0) {
+	var src = _v0.src;
+	var id = _v0.id;
+	var x = _v0.x;
+	var y = _v0.y;
+	var width = _v0.width;
+	var height = _v0.height;
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'src',
+				$elm$json$Json$Encode$string(src)),
+				_Utils_Tuple2(
+				'id',
+				$elm$json$Json$Encode$int(id)),
+				_Utils_Tuple2(
+				'x',
+				$elm$json$Json$Encode$float(x)),
+				_Utils_Tuple2(
+				'y',
+				$elm$json$Json$Encode$float(y)),
+				_Utils_Tuple2(
+				'width',
+				$elm$json$Json$Encode$float(width)),
+				_Utils_Tuple2(
+				'height',
+				$elm$json$Json$Encode$float(height))
+			]));
+};
+var $elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var $author$project$Vec$abs = function (_v0) {
+	var x = _v0.x;
+	var y = _v0.y;
+	return {
+		x: $elm$core$Basics$abs(x),
+		y: $elm$core$Basics$abs(y)
+	};
+};
+var $author$project$Vec$sub = F2(
+	function (v1, v2) {
+		return {x: v1.x - v2.x, y: v1.y - v2.y};
+	});
+var $author$project$BBox$height = function (_v0) {
+	var s = _v0.s;
+	var t = _v0.t;
+	return $author$project$Vec$abs(
+		A2($author$project$Vec$sub, t, s)).y;
+};
+var $elm$core$Result$map = F2(
+	function (func, ra) {
+		if (ra.$ === 'Ok') {
+			var a = ra.a;
+			return $elm$core$Result$Ok(
+				func(a));
+		} else {
+			var e = ra.a;
+			return $elm$core$Result$Err(e);
 		}
+	});
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $author$project$Vec$scale = F2(
+	function (r, _v0) {
+		var x = _v0.x;
+		var y = _v0.y;
+		return {x: r * x, y: r * y};
+	});
+var $author$project$Main$scaleForImg = F2(
+	function (rect, bbox) {
+		var s = bbox.s;
+		var t = bbox.t;
+		var r = rect.width / $author$project$Main$svgWidth(rect);
+		return _Utils_update(
+			bbox,
+			{
+				s: A2($author$project$Vec$scale, r, s),
+				t: A2($author$project$Vec$scale, r, t)
+			});
+	});
+var $elm$core$Dict$map = F2(
+	function (func, dict) {
+		if (dict.$ === 'RBEmpty_elm_builtin') {
+			return $elm$core$Dict$RBEmpty_elm_builtin;
+		} else {
+			var color = dict.a;
+			var key = dict.b;
+			var value = dict.c;
+			var left = dict.d;
+			var right = dict.e;
+			return A5(
+				$elm$core$Dict$RBNode_elm_builtin,
+				color,
+				key,
+				A2(func, key, value),
+				A2($elm$core$Dict$map, func, left),
+				A2($elm$core$Dict$map, func, right));
+		}
+	});
+var $elm$core$Dict$values = function (dict) {
+	return A3(
+		$elm$core$Dict$foldr,
+		F3(
+			function (key, value, valueList) {
+				return A2($elm$core$List$cons, value, valueList);
+			}),
+		_List_Nil,
+		dict);
+};
+var $author$project$BBoxies$toListWith = F2(
+	function (f, _v0) {
+		var entities = _v0.entities;
+		var select = _v0.select;
+		var isSelected = function (id) {
+			if (select.$ === 'Nothing') {
+				return false;
+			} else {
+				var selectedId = select.a;
+				return _Utils_eq(id, selectedId);
+			}
+		};
+		return $elm$core$Dict$values(
+			A2(
+				$elm$core$Dict$map,
+				F2(
+					function (id, bbox) {
+						return A3(
+							f,
+							isSelected(id),
+							id,
+							bbox);
+					}),
+				entities));
+	});
+var $author$project$BBox$width = function (_v0) {
+	var s = _v0.s;
+	var t = _v0.t;
+	return $author$project$Vec$abs(
+		A2($author$project$Vec$sub, t, s)).x;
+};
+var $elm$core$Result$withDefault = F2(
+	function (def, result) {
+		if (result.$ === 'Ok') {
+			var a = result.a;
+			return a;
+		} else {
+			return def;
+		}
+	});
+var $author$project$Main$allClippedImageCmd = function (_v0) {
+	var boxies = _v0.boxies;
+	var image = _v0.image;
+	return A2(
+		$elm$core$Result$withDefault,
+		$elm$core$Platform$Cmd$none,
+		A2(
+			$elm$core$Result$map,
+			function (_v1) {
+				var src = _v1.src;
+				var size = _v1.size;
+				return $elm$core$Platform$Cmd$batch(
+					A2(
+						$author$project$BBoxies$toListWith,
+						F3(
+							function (_v2, id, box) {
+								var imgBox = A2($author$project$Main$scaleForImg, size, box);
+								return $author$project$Main$askClippedImage(
+									$author$project$Main$clippedImageProposal(
+										{
+											height: $author$project$BBox$height(imgBox),
+											id: id,
+											src: src,
+											width: $author$project$BBox$width(imgBox),
+											x: imgBox.s.x,
+											y: imgBox.s.y
+										}));
+							}),
+						boxies));
+			},
+			image));
+};
+var $elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
+var $elm$file$File$Download$bytes = F3(
+	function (name, mime, content) {
+		return A2(
+			$elm$core$Task$perform,
+			$elm$core$Basics$never,
+			A3(
+				_File_download,
+				name,
+				mime,
+				_File_makeBytesSafeForInternetExplorer(content)));
 	});
 var $elm$core$Dict$get = F2(
 	function (targetKey, dict) {
@@ -6005,6 +6357,94 @@ var $elm$core$Dict$get = F2(
 			}
 		}
 	});
+var $author$project$BBoxies$get = F2(
+	function (i, _v0) {
+		var entities = _v0.entities;
+		return A2($elm$core$Dict$get, i, entities);
+	});
+var $elm$core$Maybe$map2 = F3(
+	function (func, ma, mb) {
+		if (ma.$ === 'Nothing') {
+			return $elm$core$Maybe$Nothing;
+		} else {
+			var a = ma.a;
+			if (mb.$ === 'Nothing') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var b = mb.a;
+				return $elm$core$Maybe$Just(
+					A2(func, a, b));
+			}
+		}
+	});
+var $elm$core$Result$toMaybe = function (result) {
+	if (result.$ === 'Ok') {
+		var v = result.a;
+		return $elm$core$Maybe$Just(v);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $author$project$Main$clippedImageCmd = F2(
+	function (id, _v0) {
+		var boxies = _v0.boxies;
+		var image = _v0.image;
+		return A2(
+			$elm$core$Maybe$withDefault,
+			$elm$core$Platform$Cmd$none,
+			A3(
+				$elm$core$Maybe$map2,
+				F2(
+					function (box, _v1) {
+						var src = _v1.src;
+						var size = _v1.size;
+						var imgBox = A2($author$project$Main$scaleForImg, size, box);
+						return $author$project$Main$askClippedImage(
+							$author$project$Main$clippedImageProposal(
+								{
+									height: $author$project$BBox$height(imgBox),
+									id: id,
+									src: src,
+									width: $author$project$BBox$width(imgBox),
+									x: imgBox.s.x,
+									y: imgBox.s.y
+								}));
+					}),
+				A2($author$project$BBoxies$get, id, boxies),
+				$elm$core$Result$toMaybe(image)));
+	});
+var $author$project$Main$clippedHeldImageCmd = function (model) {
+	var boxies = model.boxies;
+	var image = model.image;
+	var _v0 = boxies.hold;
+	if (_v0.$ === 'Nothing') {
+		return $elm$core$Platform$Cmd$none;
+	} else {
+		var id = _v0.a.id;
+		return A2($author$project$Main$clippedImageCmd, id, model);
+	}
+};
+var $author$project$BBoxies$empty = {entities: $elm$core$Dict$empty, hold: $elm$core$Maybe$Nothing, nextId: 0, select: $elm$core$Maybe$Nothing};
+var $elm$file$File$Select$file = F2(
+	function (mimes, toMsg) {
+		return A2(
+			$elm$core$Task$perform,
+			toMsg,
+			_File_uploadOne(mimes));
+	});
+var $elm$json$Json$Decode$decodeValue = _Json_run;
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $elm$json$Json$Decode$int = _Json_decodeInt;
+var $elm$json$Json$Decode$string = _Json_decodeString;
 var $elm$core$Dict$getMin = function (dict) {
 	getMin:
 	while (true) {
@@ -6394,6 +6834,1158 @@ var $author$project$BBoxies$update = F3(
 			bboxies,
 			{entities: newEntities});
 	});
+var $author$project$Main$setClippedImage = F2(
+	function (model, value) {
+		var boxies = model.boxies;
+		var idAndSrc = F2(
+			function (id, src) {
+				return {id: id, src: src};
+			});
+		var decoder = A3(
+			$elm$json$Json$Decode$map2,
+			idAndSrc,
+			A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
+			A2($elm$json$Json$Decode$field, 'src', $elm$json$Json$Decode$string));
+		var _v0 = A2($elm$json$Json$Decode$decodeValue, decoder, value);
+		if (_v0.$ === 'Err') {
+			return model;
+		} else {
+			var id = _v0.a.id;
+			var src = _v0.a.src;
+			return _Utils_update(
+				model,
+				{
+					boxies: A3(
+						$author$project$BBoxies$update,
+						id,
+						function (b) {
+							return _Utils_update(
+								b,
+								{
+									clippedImg: $elm$core$Maybe$Just(src)
+								});
+						},
+						model.boxies)
+				});
+		}
+	});
+var $elm$json$Json$Decode$float = _Json_decodeFloat;
+var $elm$json$Json$Decode$map3 = _Json_map3;
+var $author$project$Main$setImage = F2(
+	function (model, value) {
+		var makeImage = F3(
+			function (src, width, height) {
+				return {
+					size: {height: height, width: width},
+					src: src
+				};
+			});
+		var decoder = A4(
+			$elm$json$Json$Decode$map3,
+			makeImage,
+			A2($elm$json$Json$Decode$field, 'src', $elm$json$Json$Decode$string),
+			A2($elm$json$Json$Decode$field, 'width', $elm$json$Json$Decode$float),
+			A2($elm$json$Json$Decode$field, 'height', $elm$json$Json$Decode$float));
+		var image = function () {
+			var _v0 = A2($elm$json$Json$Decode$decodeValue, decoder, value);
+			if (_v0.$ === 'Err') {
+				var err = _v0.a;
+				return $elm$core$Result$Err(
+					$elm$json$Json$Decode$errorToString(err));
+			} else {
+				var img = _v0.a;
+				return $elm$core$Result$Ok(img);
+			}
+		}();
+		return _Utils_update(
+			model,
+			{image: image});
+	});
+var $author$project$Main$setNewName = F3(
+	function (id, newName, model) {
+		var boxies = model.boxies;
+		var newBoxies = A3(
+			$author$project$BBoxies$update,
+			id,
+			function (b) {
+				return _Utils_update(
+					b,
+					{name: newName});
+			},
+			boxies);
+		return _Utils_update(
+			model,
+			{boxies: newBoxies});
+	});
+var $elm$file$File$toUrl = _File_toUrl;
+var $elm$bytes$Bytes$Encode$getWidth = function (builder) {
+	switch (builder.$) {
+		case 'I8':
+			return 1;
+		case 'I16':
+			return 2;
+		case 'I32':
+			return 4;
+		case 'U8':
+			return 1;
+		case 'U16':
+			return 2;
+		case 'U32':
+			return 4;
+		case 'F32':
+			return 4;
+		case 'F64':
+			return 8;
+		case 'Seq':
+			var w = builder.a;
+			return w;
+		case 'Utf8':
+			var w = builder.a;
+			return w;
+		default:
+			var bs = builder.a;
+			return _Bytes_width(bs);
+	}
+};
+var $elm$bytes$Bytes$LE = {$: 'LE'};
+var $elm$bytes$Bytes$Encode$write = F3(
+	function (builder, mb, offset) {
+		switch (builder.$) {
+			case 'I8':
+				var n = builder.a;
+				return A3(_Bytes_write_i8, mb, offset, n);
+			case 'I16':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_i16,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'I32':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_i32,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'U8':
+				var n = builder.a;
+				return A3(_Bytes_write_u8, mb, offset, n);
+			case 'U16':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_u16,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'U32':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_u32,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'F32':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_f32,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'F64':
+				var e = builder.a;
+				var n = builder.b;
+				return A4(
+					_Bytes_write_f64,
+					mb,
+					offset,
+					n,
+					_Utils_eq(e, $elm$bytes$Bytes$LE));
+			case 'Seq':
+				var bs = builder.b;
+				return A3($elm$bytes$Bytes$Encode$writeSequence, bs, mb, offset);
+			case 'Utf8':
+				var s = builder.b;
+				return A3(_Bytes_write_string, mb, offset, s);
+			default:
+				var bs = builder.a;
+				return A3(_Bytes_write_bytes, mb, offset, bs);
+		}
+	});
+var $elm$bytes$Bytes$Encode$writeSequence = F3(
+	function (builders, mb, offset) {
+		writeSequence:
+		while (true) {
+			if (!builders.b) {
+				return offset;
+			} else {
+				var b = builders.a;
+				var bs = builders.b;
+				var $temp$builders = bs,
+					$temp$mb = mb,
+					$temp$offset = A3($elm$bytes$Bytes$Encode$write, b, mb, offset);
+				builders = $temp$builders;
+				mb = $temp$mb;
+				offset = $temp$offset;
+				continue writeSequence;
+			}
+		}
+	});
+var $elm$bytes$Bytes$Encode$encode = _Bytes_encode;
+var $elm$bytes$Bytes$Encode$Utf8 = F2(
+	function (a, b) {
+		return {$: 'Utf8', a: a, b: b};
+	});
+var $elm$bytes$Bytes$Encode$string = function (str) {
+	return A2(
+		$elm$bytes$Bytes$Encode$Utf8,
+		_Bytes_getStringWidth(str),
+		str);
+};
+var $author$project$Zip$Config$defaultCentralDirectoryHeader = {
+	compressedSize: 0,
+	compressionMethod: 0,
+	crc32: 0,
+	diskNumberStart: 0,
+	externalFileAttributes: 0,
+	extraField: $elm$bytes$Bytes$Encode$encode(
+		$elm$bytes$Bytes$Encode$string('')),
+	extraFieldLength: 0,
+	fileComment: '',
+	fileCommentLength: 0,
+	fileName: '',
+	fileNameLength: 0,
+	generalPurposeBitFlag: 0,
+	internalFileAttributes: 0,
+	lastModFileDate: 0,
+	lastModFileTime: 0,
+	relativeOffsetOfLocalHeader: 0,
+	signature: 33639248,
+	uncompressedSize: 0,
+	versionMadeBy: 778,
+	versionNeededToExtract: 3
+};
+var $author$project$Zip$Config$centralDirectoryHeaderFromFile = function (_v0) {
+	var header = _v0.header;
+	return _Utils_update(
+		$author$project$Zip$Config$defaultCentralDirectoryHeader,
+		{compressedSize: header.compressedSize, crc32: header.crc32, fileName: header.fileName, fileNameLength: header.fileNameLength, uncompressedSize: header.uncompressedSize});
+};
+var $elm$bytes$Bytes$width = _Bytes_width;
+var $author$project$Zip$FileEntry$fileWidth = function (_v0) {
+	var header = _v0.header;
+	var body = _v0.body;
+	return ((30 + $elm$core$String$length(header.fileName)) + $elm$bytes$Bytes$width(header.extraField)) + $elm$bytes$Bytes$width(body);
+};
+var $elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
+		}
+	});
+var $author$project$Zip$FileEntry$scanl = F3(
+	function (f, b, xs) {
+		var scan1 = F2(
+			function (x, list) {
+				if (list.b) {
+					var acc = list.a;
+					return A2(
+						$elm$core$List$cons,
+						A2(f, x, acc),
+						list);
+				} else {
+					return _List_Nil;
+				}
+			});
+		return $elm$core$List$reverse(
+			A2(
+				$elm$core$List$drop,
+				1,
+				A3(
+					$elm$core$List$foldl,
+					scan1,
+					_List_fromArray(
+						[b]),
+					xs)));
+	});
+var $elm$core$List$sum = function (numbers) {
+	return A3($elm$core$List$foldl, $elm$core$Basics$add, 0, numbers);
+};
+var $author$project$Zip$FileEntry$fromFiles = function (files) {
+	var lackedCentralDirectory = A2($elm$core$List$map, $author$project$Zip$Config$centralDirectoryHeaderFromFile, files);
+	var fileWidths = A2($elm$core$List$map, $author$project$Zip$FileEntry$fileWidth, files);
+	var fileOffsets = A3($author$project$Zip$FileEntry$scanl, $elm$core$Basics$add, 0, fileWidths);
+	var centralDirectory = A3(
+		$elm$core$List$map2,
+		F2(
+			function (offset, cd) {
+				return _Utils_update(
+					cd,
+					{relativeOffsetOfLocalHeader: offset});
+			}),
+		fileOffsets,
+		lackedCentralDirectory);
+	return {
+		centralDirectory: centralDirectory,
+		files: files,
+		offset: $elm$core$List$sum(fileWidths)
+	};
+};
+var $elm$core$Maybe$andThen = F2(
+	function (callback, maybeValue) {
+		if (maybeValue.$ === 'Just') {
+			var value = maybeValue.a;
+			return callback(value);
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$bytes$Bytes$Decode$Done = function (a) {
+	return {$: 'Done', a: a};
+};
+var $elm$bytes$Bytes$Decode$Loop = function (a) {
+	return {$: 'Loop', a: a};
+};
+var $elm$bytes$Bytes$Decode$decode = F2(
+	function (_v0, bs) {
+		var decoder = _v0.a;
+		return A2(_Bytes_decode, decoder, bs);
+	});
+var $elm$bytes$Bytes$Decode$Decoder = function (a) {
+	return {$: 'Decoder', a: a};
+};
+var $elm$bytes$Bytes$Decode$loopHelp = F4(
+	function (state, callback, bites, offset) {
+		loopHelp:
+		while (true) {
+			var _v0 = callback(state);
+			var decoder = _v0.a;
+			var _v1 = A2(decoder, bites, offset);
+			var newOffset = _v1.a;
+			var step = _v1.b;
+			if (step.$ === 'Loop') {
+				var newState = step.a;
+				var $temp$state = newState,
+					$temp$callback = callback,
+					$temp$bites = bites,
+					$temp$offset = newOffset;
+				state = $temp$state;
+				callback = $temp$callback;
+				bites = $temp$bites;
+				offset = $temp$offset;
+				continue loopHelp;
+			} else {
+				var result = step.a;
+				return _Utils_Tuple2(newOffset, result);
+			}
+		}
+	});
+var $elm$bytes$Bytes$Decode$loop = F2(
+	function (state, callback) {
+		return $elm$bytes$Bytes$Decode$Decoder(
+			A2($elm$bytes$Bytes$Decode$loopHelp, state, callback));
+	});
+var $elm$bytes$Bytes$Decode$map = F2(
+	function (func, _v0) {
+		var decodeA = _v0.a;
+		return $elm$bytes$Bytes$Decode$Decoder(
+			F2(
+				function (bites, offset) {
+					var _v1 = A2(decodeA, bites, offset);
+					var aOffset = _v1.a;
+					var a = _v1.b;
+					return _Utils_Tuple2(
+						aOffset,
+						func(a));
+				}));
+	});
+var $elm$bytes$Bytes$Decode$succeed = function (a) {
+	return $elm$bytes$Bytes$Decode$Decoder(
+		F2(
+			function (_v0, offset) {
+				return _Utils_Tuple2(offset, a);
+			}));
+};
+var $elm$bytes$Bytes$Decode$unsignedInt8 = $elm$bytes$Bytes$Decode$Decoder(_Bytes_read_u8);
+var $author$project$CRC32$byteToUInt8 = function (bytes) {
+	var step = function (_v0) {
+		var cnt = _v0.a;
+		var xs = _v0.b;
+		return (cnt <= 0) ? $elm$bytes$Bytes$Decode$succeed(
+			$elm$bytes$Bytes$Decode$Done(
+				$elm$core$List$reverse(xs))) : A2(
+			$elm$bytes$Bytes$Decode$map,
+			function (x) {
+				return $elm$bytes$Bytes$Decode$Loop(
+					_Utils_Tuple2(
+						cnt - 1,
+						A2($elm$core$List$cons, x, xs)));
+			},
+			$elm$bytes$Bytes$Decode$unsignedInt8);
+	};
+	var len = $elm$bytes$Bytes$width(bytes);
+	return A2(
+		$elm$bytes$Bytes$Decode$decode,
+		A2(
+			$elm$bytes$Bytes$Decode$loop,
+			_Utils_Tuple2(len, _List_Nil),
+			step),
+		bytes);
+};
+var $author$project$Zip$Config$defaultLocalFileHeader = {
+	compressedSize: 0,
+	compressionMethod: 0,
+	crc32: 0,
+	date: 0,
+	extraField: $elm$bytes$Bytes$Encode$encode(
+		$elm$bytes$Bytes$Encode$string('')),
+	extraFieldLength: 0,
+	fileName: '',
+	fileNameLength: 0,
+	generalPurposeBitFlag: 0,
+	signature: 67324752,
+	time: 0,
+	uncompressedSize: 0,
+	versionNeededToExtract: 10
+};
+var $elm$core$Bitwise$and = _Bitwise_and;
+var $elm$core$Bitwise$shiftRightZfBy = _Bitwise_shiftRightZfBy;
+var $elm$core$Array$bitMask = 4294967295 >>> (32 - $elm$core$Array$shiftStep);
+var $elm$core$Basics$ge = _Utils_ge;
+var $elm$core$Elm$JsArray$unsafeGet = _JsArray_unsafeGet;
+var $elm$core$Array$getHelp = F3(
+	function (shift, index, tree) {
+		getHelp:
+		while (true) {
+			var pos = $elm$core$Array$bitMask & (index >>> shift);
+			var _v0 = A2($elm$core$Elm$JsArray$unsafeGet, pos, tree);
+			if (_v0.$ === 'SubTree') {
+				var subTree = _v0.a;
+				var $temp$shift = shift - $elm$core$Array$shiftStep,
+					$temp$index = index,
+					$temp$tree = subTree;
+				shift = $temp$shift;
+				index = $temp$index;
+				tree = $temp$tree;
+				continue getHelp;
+			} else {
+				var values = _v0.a;
+				return A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, values);
+			}
+		}
+	});
+var $elm$core$Bitwise$shiftLeftBy = _Bitwise_shiftLeftBy;
+var $elm$core$Array$tailIndex = function (len) {
+	return (len >>> 5) << 5;
+};
+var $elm$core$Array$get = F2(
+	function (index, _v0) {
+		var len = _v0.a;
+		var startShift = _v0.b;
+		var tree = _v0.c;
+		var tail = _v0.d;
+		return ((index < 0) || (_Utils_cmp(index, len) > -1)) ? $elm$core$Maybe$Nothing : ((_Utils_cmp(
+			index,
+			$elm$core$Array$tailIndex(len)) > -1) ? $elm$core$Maybe$Just(
+			A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, tail)) : $elm$core$Maybe$Just(
+			A3($elm$core$Array$getHelp, startShift, index, tree)));
+	});
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$Array$fromListHelp = F3(
+	function (list, nodeList, nodeListSize) {
+		fromListHelp:
+		while (true) {
+			var _v0 = A2($elm$core$Elm$JsArray$initializeFromList, $elm$core$Array$branchFactor, list);
+			var jsArray = _v0.a;
+			var remainingItems = _v0.b;
+			if (_Utils_cmp(
+				$elm$core$Elm$JsArray$length(jsArray),
+				$elm$core$Array$branchFactor) < 0) {
+				return A2(
+					$elm$core$Array$builderToArray,
+					true,
+					{nodeList: nodeList, nodeListSize: nodeListSize, tail: jsArray});
+			} else {
+				var $temp$list = remainingItems,
+					$temp$nodeList = A2(
+					$elm$core$List$cons,
+					$elm$core$Array$Leaf(jsArray),
+					nodeList),
+					$temp$nodeListSize = nodeListSize + 1;
+				list = $temp$list;
+				nodeList = $temp$nodeList;
+				nodeListSize = $temp$nodeListSize;
+				continue fromListHelp;
+			}
+		}
+	});
+var $elm$core$Array$fromList = function (list) {
+	if (!list.b) {
+		return $elm$core$Array$empty;
+	} else {
+		return A3($elm$core$Array$fromListHelp, list, _List_Nil, 0);
+	}
+};
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $elm$core$Bitwise$xor = _Bitwise_xor;
+var $author$project$CRC32$table = $elm$core$Array$fromList(
+	A2(
+		$elm$core$List$map,
+		function (i) {
+			return A3(
+				$elm$core$List$foldr,
+				F2(
+					function (j, c) {
+						return (!(!(c & 1))) ? (3988292384 ^ (c >>> 1)) : (c >>> 1);
+					}),
+				i,
+				A2($elm$core$List$range, 0, 7));
+		},
+		A2($elm$core$List$range, 0, 255)));
+var $author$project$CRC32$encode = function (list) {
+	return A2(
+		$elm$core$Maybe$map,
+		$elm$core$Bitwise$xor(4294967295),
+		A3(
+			$elm$core$List$foldl,
+			F2(
+				function (e, maybeC) {
+					if (maybeC.$ === 'Nothing') {
+						return $elm$core$Maybe$Nothing;
+					} else {
+						var c = maybeC.a;
+						return A2(
+							$elm$core$Maybe$map,
+							function (arrElem) {
+								return arrElem ^ (c >>> 8);
+							},
+							A2($elm$core$Array$get, (c ^ e) & 255, $author$project$CRC32$table));
+					}
+				}),
+			$elm$core$Maybe$Just(4294967295),
+			list));
+};
+var $author$project$Zip$Config$makeFile = F2(
+	function (name, body) {
+		return A2(
+			$elm$core$Maybe$map,
+			function (code) {
+				return {
+					body: body,
+					header: _Utils_update(
+						$author$project$Zip$Config$defaultLocalFileHeader,
+						{
+							compressedSize: $elm$bytes$Bytes$width(body),
+							crc32: code,
+							fileName: name,
+							fileNameLength: $elm$core$String$length(name),
+							uncompressedSize: $elm$bytes$Bytes$width(body)
+						})
+				};
+			},
+			A2(
+				$elm$core$Maybe$andThen,
+				$author$project$CRC32$encode,
+				$author$project$CRC32$byteToUInt8(body)));
+	});
+var $author$project$Zip$onlyJust = function (xs) {
+	return A3(
+		$elm$core$List$foldr,
+		F2(
+			function (x, acc) {
+				if (x.$ === 'Nothing') {
+					return acc;
+				} else {
+					var y = x.a;
+					return A2($elm$core$List$cons, y, acc);
+				}
+			}),
+		_List_Nil,
+		xs);
+};
+var $elm$bytes$Bytes$Encode$Bytes = function (a) {
+	return {$: 'Bytes', a: a};
+};
+var $elm$bytes$Bytes$Encode$bytes = $elm$bytes$Bytes$Encode$Bytes;
+var $elm$bytes$Bytes$Encode$Seq = F2(
+	function (a, b) {
+		return {$: 'Seq', a: a, b: b};
+	});
+var $elm$bytes$Bytes$Encode$getWidths = F2(
+	function (width, builders) {
+		getWidths:
+		while (true) {
+			if (!builders.b) {
+				return width;
+			} else {
+				var b = builders.a;
+				var bs = builders.b;
+				var $temp$width = width + $elm$bytes$Bytes$Encode$getWidth(b),
+					$temp$builders = bs;
+				width = $temp$width;
+				builders = $temp$builders;
+				continue getWidths;
+			}
+		}
+	});
+var $elm$bytes$Bytes$Encode$sequence = function (builders) {
+	return A2(
+		$elm$bytes$Bytes$Encode$Seq,
+		A2($elm$bytes$Bytes$Encode$getWidths, 0, builders),
+		builders);
+};
+var $elm$bytes$Bytes$Encode$U16 = F2(
+	function (a, b) {
+		return {$: 'U16', a: a, b: b};
+	});
+var $elm$bytes$Bytes$Encode$unsignedInt16 = $elm$bytes$Bytes$Encode$U16;
+var $elm$bytes$Bytes$Encode$U32 = F2(
+	function (a, b) {
+		return {$: 'U32', a: a, b: b};
+	});
+var $elm$bytes$Bytes$Encode$unsignedInt32 = $elm$bytes$Bytes$Encode$U32;
+var $author$project$Zip$Encode$centralDirectoryHeader = function (c) {
+	return $elm$bytes$Bytes$Encode$sequence(
+		_List_fromArray(
+			[
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, c.signature),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.versionMadeBy),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.versionNeededToExtract),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.generalPurposeBitFlag),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.compressionMethod),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.lastModFileTime),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.lastModFileDate),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, c.crc32),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, c.compressedSize),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, c.uncompressedSize),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.fileNameLength),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.extraFieldLength),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.fileCommentLength),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.diskNumberStart),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, c.internalFileAttributes),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, c.externalFileAttributes),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, c.relativeOffsetOfLocalHeader),
+				$elm$bytes$Bytes$Encode$string(c.fileName),
+				$elm$bytes$Bytes$Encode$bytes(c.extraField),
+				$elm$bytes$Bytes$Encode$string(c.fileComment)
+			]));
+};
+var $author$project$Zip$Config$defaultEndOfCentralDirectory = {numberOfTheDiskWithTheStartOfTheCentralDirectory: 0, numberOfThisDisk: 0, offsetOfStartOfCentralDirectory: 0, signature: 101010256, sizeOfTheCentralDirectory: 0, totalNumberOfEntriesInTheCentralDirectory: 0, totalNumberOfEntriesInTheCentralDirectoryOnThisDisk: 0, zipFileComment: '', zipFileCommentLength: 0};
+var $author$project$Zip$Encode$endOfCentralDirectory = function (e) {
+	return $elm$bytes$Bytes$Encode$sequence(
+		_List_fromArray(
+			[
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, e.signature),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, e.numberOfThisDisk),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, e.numberOfTheDiskWithTheStartOfTheCentralDirectory),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, e.totalNumberOfEntriesInTheCentralDirectoryOnThisDisk),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, e.totalNumberOfEntriesInTheCentralDirectory),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, e.sizeOfTheCentralDirectory),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, e.offsetOfStartOfCentralDirectory),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, e.zipFileCommentLength),
+				$elm$bytes$Bytes$Encode$string(e.zipFileComment)
+			]));
+};
+var $author$project$Zip$Encode$localFileHeader = function (l) {
+	return $elm$bytes$Bytes$Encode$sequence(
+		_List_fromArray(
+			[
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, l.signature),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, l.versionNeededToExtract),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, l.generalPurposeBitFlag),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, l.compressionMethod),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, l.time),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, l.date),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, l.crc32),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, l.compressedSize),
+				A2($elm$bytes$Bytes$Encode$unsignedInt32, $elm$bytes$Bytes$LE, l.uncompressedSize),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, l.fileNameLength),
+				A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$LE, l.extraFieldLength),
+				$elm$bytes$Bytes$Encode$string(l.fileName),
+				$elm$bytes$Bytes$Encode$bytes(l.extraField)
+			]));
+};
+var $author$project$Zip$Encode$file = function (_v0) {
+	var header = _v0.header;
+	var body = _v0.body;
+	return $elm$bytes$Bytes$Encode$sequence(
+		_List_fromArray(
+			[
+				$author$project$Zip$Encode$localFileHeader(header),
+				$elm$bytes$Bytes$Encode$bytes(body)
+			]));
+};
+var $author$project$Zip$Encode$zip = function (_v0) {
+	var files = _v0.files;
+	var centralDirectory = _v0.centralDirectory;
+	var offset = _v0.offset;
+	var count = $elm$core$List$length(files);
+	var centralDirectoryBytes = $elm$bytes$Bytes$Encode$encode(
+		$elm$bytes$Bytes$Encode$sequence(
+			A2($elm$core$List$map, $author$project$Zip$Encode$centralDirectoryHeader, centralDirectory)));
+	var eocd = _Utils_update(
+		$author$project$Zip$Config$defaultEndOfCentralDirectory,
+		{
+			offsetOfStartOfCentralDirectory: offset,
+			sizeOfTheCentralDirectory: $elm$bytes$Bytes$width(centralDirectoryBytes),
+			totalNumberOfEntriesInTheCentralDirectory: count,
+			totalNumberOfEntriesInTheCentralDirectoryOnThisDisk: count
+		});
+	return $elm$bytes$Bytes$Encode$sequence(
+		_List_fromArray(
+			[
+				$elm$bytes$Bytes$Encode$sequence(
+				A2($elm$core$List$map, $author$project$Zip$Encode$file, files)),
+				$elm$bytes$Bytes$Encode$bytes(centralDirectoryBytes),
+				$author$project$Zip$Encode$endOfCentralDirectory(eocd)
+			]));
+};
+var $author$project$Zip$fromList = function (list) {
+	var files = $author$project$Zip$onlyJust(
+		A2(
+			$elm$core$List$map,
+			function (_v0) {
+				var name = _v0.a;
+				var body = _v0.b;
+				return A2($author$project$Zip$Config$makeFile, name, body);
+			},
+			list));
+	return $elm$bytes$Bytes$Encode$encode(
+		$author$project$Zip$Encode$zip(
+			$author$project$Zip$FileEntry$fromFiles(files)));
+};
+var $elm$core$Basics$composeR = F3(
+	function (f, g, x) {
+		return g(
+			f(x));
+	});
+var $elm$bytes$Bytes$BE = {$: 'BE'};
+var $danfishgold$base64_bytes$Encode$isValidChar = function (c) {
+	if ($elm$core$Char$isAlphaNum(c)) {
+		return true;
+	} else {
+		switch (c.valueOf()) {
+			case '+':
+				return true;
+			case '/':
+				return true;
+			default:
+				return false;
+		}
+	}
+};
+var $elm$core$Bitwise$or = _Bitwise_or;
+var $elm$core$Bitwise$shiftRightBy = _Bitwise_shiftRightBy;
+var $danfishgold$base64_bytes$Encode$unsafeConvertChar = function (_char) {
+	var key = $elm$core$Char$toCode(_char);
+	if ((key >= 65) && (key <= 90)) {
+		return key - 65;
+	} else {
+		if ((key >= 97) && (key <= 122)) {
+			return (key - 97) + 26;
+		} else {
+			if ((key >= 48) && (key <= 57)) {
+				return ((key - 48) + 26) + 26;
+			} else {
+				switch (_char.valueOf()) {
+					case '+':
+						return 62;
+					case '/':
+						return 63;
+					default:
+						return -1;
+				}
+			}
+		}
+	}
+};
+var $elm$bytes$Bytes$Encode$U8 = function (a) {
+	return {$: 'U8', a: a};
+};
+var $elm$bytes$Bytes$Encode$unsignedInt8 = $elm$bytes$Bytes$Encode$U8;
+var $danfishgold$base64_bytes$Encode$encodeCharacters = F4(
+	function (a, b, c, d) {
+		if ($danfishgold$base64_bytes$Encode$isValidChar(a) && $danfishgold$base64_bytes$Encode$isValidChar(b)) {
+			var n2 = $danfishgold$base64_bytes$Encode$unsafeConvertChar(b);
+			var n1 = $danfishgold$base64_bytes$Encode$unsafeConvertChar(a);
+			if ('=' === d.valueOf()) {
+				if ('=' === c.valueOf()) {
+					var n = (n1 << 18) | (n2 << 12);
+					var b1 = n >> 16;
+					return $elm$core$Maybe$Just(
+						$elm$bytes$Bytes$Encode$unsignedInt8(b1));
+				} else {
+					if ($danfishgold$base64_bytes$Encode$isValidChar(c)) {
+						var n3 = $danfishgold$base64_bytes$Encode$unsafeConvertChar(c);
+						var n = ((n1 << 18) | (n2 << 12)) | (n3 << 6);
+						var combined = n >> 8;
+						return $elm$core$Maybe$Just(
+							A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$BE, combined));
+					} else {
+						return $elm$core$Maybe$Nothing;
+					}
+				}
+			} else {
+				if ($danfishgold$base64_bytes$Encode$isValidChar(c) && $danfishgold$base64_bytes$Encode$isValidChar(d)) {
+					var n4 = $danfishgold$base64_bytes$Encode$unsafeConvertChar(d);
+					var n3 = $danfishgold$base64_bytes$Encode$unsafeConvertChar(c);
+					var n = ((n1 << 18) | (n2 << 12)) | ((n3 << 6) | n4);
+					var combined = n >> 8;
+					var b3 = n;
+					return $elm$core$Maybe$Just(
+						$elm$bytes$Bytes$Encode$sequence(
+							_List_fromArray(
+								[
+									A2($elm$bytes$Bytes$Encode$unsignedInt16, $elm$bytes$Bytes$BE, combined),
+									$elm$bytes$Bytes$Encode$unsignedInt8(b3)
+								])));
+				} else {
+					return $elm$core$Maybe$Nothing;
+				}
+			}
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$String$foldr = _String_foldr;
+var $elm$core$String$toList = function (string) {
+	return A3($elm$core$String$foldr, $elm$core$List$cons, _List_Nil, string);
+};
+var $danfishgold$base64_bytes$Encode$encodeChunks = F2(
+	function (input, accum) {
+		encodeChunks:
+		while (true) {
+			var _v0 = $elm$core$String$toList(
+				A2($elm$core$String$left, 4, input));
+			_v0$4:
+			while (true) {
+				if (!_v0.b) {
+					return $elm$core$Maybe$Just(accum);
+				} else {
+					if (_v0.b.b) {
+						if (_v0.b.b.b) {
+							if (_v0.b.b.b.b) {
+								if (!_v0.b.b.b.b.b) {
+									var a = _v0.a;
+									var _v1 = _v0.b;
+									var b = _v1.a;
+									var _v2 = _v1.b;
+									var c = _v2.a;
+									var _v3 = _v2.b;
+									var d = _v3.a;
+									var _v4 = A4($danfishgold$base64_bytes$Encode$encodeCharacters, a, b, c, d);
+									if (_v4.$ === 'Just') {
+										var enc = _v4.a;
+										var $temp$input = A2($elm$core$String$dropLeft, 4, input),
+											$temp$accum = A2($elm$core$List$cons, enc, accum);
+										input = $temp$input;
+										accum = $temp$accum;
+										continue encodeChunks;
+									} else {
+										return $elm$core$Maybe$Nothing;
+									}
+								} else {
+									break _v0$4;
+								}
+							} else {
+								var a = _v0.a;
+								var _v5 = _v0.b;
+								var b = _v5.a;
+								var _v6 = _v5.b;
+								var c = _v6.a;
+								var _v7 = A4(
+									$danfishgold$base64_bytes$Encode$encodeCharacters,
+									a,
+									b,
+									c,
+									_Utils_chr('='));
+								if (_v7.$ === 'Nothing') {
+									return $elm$core$Maybe$Nothing;
+								} else {
+									var enc = _v7.a;
+									return $elm$core$Maybe$Just(
+										A2($elm$core$List$cons, enc, accum));
+								}
+							}
+						} else {
+							var a = _v0.a;
+							var _v8 = _v0.b;
+							var b = _v8.a;
+							var _v9 = A4(
+								$danfishgold$base64_bytes$Encode$encodeCharacters,
+								a,
+								b,
+								_Utils_chr('='),
+								_Utils_chr('='));
+							if (_v9.$ === 'Nothing') {
+								return $elm$core$Maybe$Nothing;
+							} else {
+								var enc = _v9.a;
+								return $elm$core$Maybe$Just(
+									A2($elm$core$List$cons, enc, accum));
+							}
+						}
+					} else {
+						break _v0$4;
+					}
+				}
+			}
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $danfishgold$base64_bytes$Encode$encoder = function (string) {
+	return A2(
+		$elm$core$Maybe$map,
+		A2($elm$core$Basics$composeR, $elm$core$List$reverse, $elm$bytes$Bytes$Encode$sequence),
+		A2($danfishgold$base64_bytes$Encode$encodeChunks, string, _List_Nil));
+};
+var $danfishgold$base64_bytes$Encode$toBytes = function (string) {
+	return A2(
+		$elm$core$Maybe$map,
+		$elm$bytes$Bytes$Encode$encode,
+		$danfishgold$base64_bytes$Encode$encoder(string));
+};
+var $danfishgold$base64_bytes$Base64$toBytes = $danfishgold$base64_bytes$Encode$toBytes;
+var $author$project$BBoxies$onlyJust = function (xs) {
+	return A3(
+		$elm$core$List$foldr,
+		F2(
+			function (maybeE, acc) {
+				if (maybeE.$ === 'Nothing') {
+					return acc;
+				} else {
+					var e = maybeE.a;
+					return A2($elm$core$List$cons, e, acc);
+				}
+			}),
+		_List_Nil,
+		xs);
+};
+var $author$project$BBoxies$validateName = F2(
+	function (id, name) {
+		return (name === '') ? $elm$core$String$fromInt(id) : name;
+	});
+var $author$project$BBoxies$toImages = function (boxies) {
+	return $author$project$BBoxies$onlyJust(
+		A2(
+			$author$project$BBoxies$toListWith,
+			F3(
+				function (_v0, id, box) {
+					var _v1 = box.clippedImg;
+					if (_v1.$ === 'Nothing') {
+						return $elm$core$Maybe$Nothing;
+					} else {
+						var src = _v1.a;
+						return $elm$core$Maybe$Just(
+							{
+								name: A2($author$project$BBoxies$validateName, id, box.name) + '.png',
+								src: src
+							});
+					}
+				}),
+			boxies));
+};
+var $author$project$BBoxies$toZip = function (bboxies) {
+	var help = F2(
+		function (_v1, acc) {
+			var name = _v1.name;
+			var src = _v1.src;
+			var _v0 = $danfishgold$base64_bytes$Base64$toBytes(
+				A2($elm$core$String$dropLeft, 22, src));
+			if (_v0.$ === 'Nothing') {
+				return acc;
+			} else {
+				var _byte = _v0.a;
+				var entry = _Utils_Tuple2(name, _byte);
+				return A2($elm$core$List$cons, entry, acc);
+			}
+		});
+	return $author$project$Zip$fromList(
+		A3(
+			$elm$core$List$foldr,
+			help,
+			_List_Nil,
+			$author$project$BBoxies$toImages(bboxies)));
+};
+var $author$project$BBoxies$toggleHold = F2(
+	function (info, boxies) {
+		return _Utils_update(
+			boxies,
+			{hold: info});
+	});
+var $author$project$BBoxies$toggleSelect = F2(
+	function (id, boxies) {
+		return _Utils_update(
+			boxies,
+			{select: id});
+	});
+var $elm$core$Basics$composeL = F3(
+	function (g, f, x) {
+		return g(
+			f(x));
+	});
+var $author$project$Vec$max = F2(
+	function (v1, v2) {
+		return {
+			x: A2($elm$core$Basics$max, v1.x, v2.x),
+			y: A2($elm$core$Basics$max, v1.y, v2.y)
+		};
+	});
+var $elm$core$Basics$min = F2(
+	function (x, y) {
+		return (_Utils_cmp(x, y) < 0) ? x : y;
+	});
+var $author$project$Vec$min = F2(
+	function (v1, v2) {
+		return {
+			x: A2($elm$core$Basics$min, v1.x, v2.x),
+			y: A2($elm$core$Basics$min, v1.y, v2.y)
+		};
+	});
+var $author$project$BBox$normalize = function (box) {
+	var s = box.s;
+	var t = box.t;
+	return _Utils_update(
+		box,
+		{
+			s: A2($author$project$Vec$min, s, t),
+			t: A2($author$project$Vec$max, s, t)
+		});
+};
+var $author$project$BBox$transform = F3(
+	function (_v0, anchor, box) {
+		var dx = _v0.dx;
+		var dy = _v0.dy;
+		switch (anchor.$) {
+			case 'Inner':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, dx, dy)),
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, dx, dy))
+					});
+			case 'Above':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, 0, dy))
+					});
+			case 'Right':
+				return _Utils_update(
+					box,
+					{
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, dx, 0))
+					});
+			case 'Below':
+				return _Utils_update(
+					box,
+					{
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, 0, dy))
+					});
+			case 'Left':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, dx, 0))
+					});
+			case 'AboveLeft':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, dx, dy))
+					});
+			case 'AboveRight':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, 0, dy)),
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, dx, 0))
+					});
+			case 'BelowRight':
+				return _Utils_update(
+					box,
+					{
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, dx, dy))
+					});
+			default:
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, dx, 0)),
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, 0, dy))
+					});
+		}
+	});
 var $author$project$BBoxies$updateHeldBox = F2(
 	function (mouse, bboxies) {
 		var hold = bboxies.hold;
@@ -6405,7 +7997,10 @@ var $author$project$BBoxies$updateHeldBox = F2(
 			return A3(
 				$author$project$BBoxies$update,
 				id,
-				A2($author$project$BBox$transform, mouse, anchor),
+				A2(
+					$elm$core$Basics$composeL,
+					$author$project$BBox$normalize,
+					A2($author$project$BBox$transform, mouse, anchor)),
 				bboxies);
 		}
 	});
@@ -6449,7 +8044,9 @@ var $author$project$Main$update = F2(
 				var y = msg.b;
 				var newModel = $author$project$Main$updateHeldBox(
 					A3($author$project$Main$updateMouse, x, y, model));
-				return _Utils_Tuple2(newModel, $elm$core$Platform$Cmd$none);
+				return _Utils_Tuple2(
+					newModel,
+					$author$project$Main$clippedHeldImageCmd(newModel));
 			case 'DragEnded':
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -6481,18 +8078,53 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					model,
 					$author$project$Main$askImageInfo(url));
-			default:
+			case 'ImageInfoReceived':
+				var value = msg.a;
+				var newModel = A2($author$project$Main$setImage, model, value);
+				return _Utils_Tuple2(
+					newModel,
+					$author$project$Main$allClippedImageCmd(newModel));
+			case 'ClippedImageReceived':
 				var value = msg.a;
 				return _Utils_Tuple2(
-					A2($author$project$Main$setImage, model, value),
+					A2($author$project$Main$setClippedImage, model, value),
 					$elm$core$Platform$Cmd$none);
+			case 'AddBox':
+				var newModel = $author$project$Main$addBox(model);
+				var id = model.boxies.nextId;
+				return _Utils_Tuple2(
+					newModel,
+					A2($author$project$Main$clippedImageCmd, id, newModel));
+			case 'NameChanged':
+				var id = msg.a;
+				var newName = msg.b;
+				return _Utils_Tuple2(
+					A3($author$project$Main$setNewName, id, newName, model),
+					$elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					model,
+					A3(
+						$elm$file$File$Download$bytes,
+						'images.zip',
+						'application/zip',
+						$author$project$BBoxies$toZip(model.boxies)));
 		}
 	});
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $author$project$Main$Dragged = F2(
 	function (a, b) {
 		return {$: 'Dragged', a: a, b: b};
 	});
+var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
 var $elm$core$String$fromFloat = _String_fromNumber;
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
@@ -6521,76 +8153,13 @@ var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
 var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
-var $author$project$Main$svgHeight = function (_v0) {
-	var width = _v0.width;
-	var height = _v0.height;
-	return (height * 500) / width;
-};
-var $author$project$Main$svgWidth = function (rect) {
-	return 500;
-};
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $author$project$Main$Box = F3(
 	function (isSelected, id, bbox) {
 		return {bbox: bbox, id: id, isSelected: isSelected};
 	});
-var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
 var $elm$svg$Svg$g = $elm$svg$Svg$trustedNode('g');
-var $elm$core$Dict$map = F2(
-	function (func, dict) {
-		if (dict.$ === 'RBEmpty_elm_builtin') {
-			return $elm$core$Dict$RBEmpty_elm_builtin;
-		} else {
-			var color = dict.a;
-			var key = dict.b;
-			var value = dict.c;
-			var left = dict.d;
-			var right = dict.e;
-			return A5(
-				$elm$core$Dict$RBNode_elm_builtin,
-				color,
-				key,
-				A2(func, key, value),
-				A2($elm$core$Dict$map, func, left),
-				A2($elm$core$Dict$map, func, right));
-		}
-	});
-var $elm$core$Dict$values = function (dict) {
-	return A3(
-		$elm$core$Dict$foldr,
-		F3(
-			function (key, value, valueList) {
-				return A2($elm$core$List$cons, value, valueList);
-			}),
-		_List_Nil,
-		dict);
-};
-var $author$project$BBoxies$toListWith = F2(
-	function (f, _v0) {
-		var entities = _v0.entities;
-		var select = _v0.select;
-		var isSelected = function (id) {
-			if (select.$ === 'Nothing') {
-				return false;
-			} else {
-				var selectedId = select.a;
-				return _Utils_eq(id, selectedId);
-			}
-		};
-		return $elm$core$Dict$values(
-			A2(
-				$elm$core$Dict$map,
-				F2(
-					function (id, bbox) {
-						return A3(
-							f,
-							isSelected(id),
-							id,
-							bbox);
-					}),
-				entities));
-	});
 var $author$project$Main$DragStarted = function (a) {
 	return {$: 'DragStarted', a: a};
 };
@@ -6600,15 +8169,16 @@ var $author$project$BBoxies$HoldInfo = F2(
 	});
 var $author$project$BBox$Inner = {$: 'Inner'};
 var $elm$svg$Svg$Attributes$d = _VirtualDom_attribute('d');
-var $author$project$Main$dLineTo = function (_v0) {
+var $author$project$Vec$toString = function (_v0) {
 	var x = _v0.x;
 	var y = _v0.y;
-	return 'L' + ($elm$core$String$fromFloat(x) + (',' + $elm$core$String$fromFloat(y)));
+	return $elm$core$String$fromFloat(x) + (',' + $elm$core$String$fromFloat(y));
 };
-var $author$project$Main$dMoveTo = function (_v0) {
-	var x = _v0.x;
-	var y = _v0.y;
-	return 'M' + ($elm$core$String$fromFloat(x) + (',' + $elm$core$String$fromFloat(y)));
+var $author$project$Main$dLineTo = function (v) {
+	return 'L' + $author$project$Vec$toString(v);
+};
+var $author$project$Main$dMoveTo = function (v) {
+	return 'M' + $author$project$Vec$toString(v);
 };
 var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
 var $elm$svg$Svg$Events$onMouseDown = function (msg) {
@@ -6651,9 +8221,6 @@ var $author$project$Main$CornerView = F6(
 	function (pos, diff, l, color, parent, anchor) {
 		return {anchor: anchor, color: color, diff: diff, l: l, parent: parent, pos: pos};
 	});
-var $elm$core$Basics$negate = function (n) {
-	return -n;
-};
 var $author$project$Main$cornerViews = function (box) {
 	var isSelected = box.isSelected;
 	var bbox = box.bbox;
@@ -6727,10 +8294,8 @@ var $author$project$Main$styleCursor = function (anchor) {
 	return A2($elm$html$Html$Attributes$style, 'cursor', cursor);
 };
 var $elm$svg$Svg$Attributes$transform = _VirtualDom_attribute('transform');
-var $author$project$Main$translate = function (_v0) {
-	var x = _v0.x;
-	var y = _v0.y;
-	return 'translate(' + ($elm$core$String$fromFloat(x) + (',' + ($elm$core$String$fromFloat(y) + ')')));
+var $author$project$Main$translate = function (v) {
+	return 'translate(' + ($author$project$Vec$toString(v) + ')');
 };
 var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
 var $elm$svg$Svg$Attributes$x = _VirtualDom_attribute('x');
@@ -6932,7 +8497,8 @@ var $author$project$Main$viewMain = function (model) {
 					$elm$core$String$fromFloat(
 						$author$project$Main$svgHeight(size))),
 					A2($elm$html$Html$Attributes$style, 'border', '1px solid #000'),
-					$author$project$Main$onMouseMove($author$project$Main$Dragged)
+					$author$project$Main$onMouseMove($author$project$Main$Dragged),
+					$elm$svg$Svg$Attributes$class('main')
 				]),
 			_List_fromArray(
 				[
@@ -6941,6 +8507,8 @@ var $author$project$Main$viewMain = function (model) {
 				]));
 	}
 };
+var $author$project$Main$AddBox = {$: 'AddBox'};
+var $author$project$Main$Download = {$: 'Download'};
 var $author$project$Main$ImageRequested = {$: 'ImageRequested'};
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$Events$onClick = function (msg) {
@@ -6949,10 +8517,161 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $author$project$Main$NameChanged = F2(
+	function (a, b) {
+		return {$: 'NameChanged', a: a, b: b};
+	});
+var $elm$html$Html$img = _VirtualDom_node('img');
+var $elm$html$Html$input = _VirtualDom_node('input');
+var $elm$html$Html$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $elm$html$Html$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$html$Html$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $elm$html$Html$Events$onInput = function (tagger) {
+	return A2(
+		$elm$html$Html$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$elm$html$Html$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $elm$html$Html$Events$targetValue)));
+};
+var $elm$html$Html$Attributes$placeholder = $elm$html$Html$Attributes$stringProperty('placeholder');
+var $elm$html$Html$span = _VirtualDom_node('span');
+var $elm$html$Html$Attributes$src = function (url) {
+	return A2(
+		$elm$html$Html$Attributes$stringProperty,
+		'src',
+		_VirtualDom_noJavaScriptOrHtmlUri(url));
+};
+var $author$project$Main$viewClippedImage = F2(
+	function (model, _v0) {
+		var id = _v0.id;
+		var bbox = _v0.bbox;
+		var _v1 = bbox.clippedImg;
+		if (_v1.$ === 'Nothing') {
+			return A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('No Image')
+					]));
+		} else {
+			var url = _v1.a;
+			return A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$img,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$src(url),
+								A2($elm$html$Html$Attributes$style, 'width', '200px'),
+								A2($elm$html$Html$Attributes$style, 'height', 'auto'),
+								A2($elm$html$Html$Attributes$style, 'border', '1px solid #333')
+							]),
+						_List_Nil),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onInput(
+								$author$project$Main$NameChanged(id)),
+								$elm$html$Html$Attributes$placeholder(
+								$elm$core$String$fromInt(id))
+							]),
+						_List_Nil),
+						A2(
+						$elm$html$Html$span,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('.png')
+							]))
+					]));
+		}
+	});
+var $author$project$Main$viewClippedImages = function (model) {
+	var boxies = model.boxies;
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('clipped-images')
+			]),
+		A2(
+			$elm$core$List$map,
+			$author$project$Main$viewClippedImage(model),
+			A2($author$project$BBoxies$toListWith, $author$project$Main$Box, boxies)));
+};
+var $author$project$BBoxies$getSelectedBox = function (_v0) {
+	var entities = _v0.entities;
+	var select = _v0.select;
+	return A2(
+		$elm$core$Maybe$andThen,
+		function (id) {
+			return A2($elm$core$Dict$get, id, entities);
+		},
+		select);
+};
+var $author$project$Main$viewHeldBoxInfo = function (model) {
+	var _v0 = $author$project$BBoxies$getSelectedBox(model.boxies);
+	if (_v0.$ === 'Nothing') {
+		return A2($elm$html$Html$div, _List_Nil, _List_Nil);
+	} else {
+		var box = _v0.a;
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							'(' + ($author$project$Vec$toString(box.s) + ')'))
+						])),
+					A2(
+					$elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							'(' + ($author$project$Vec$toString(box.t) + ')'))
+						]))
+				]));
+	}
+};
 var $author$project$Main$viewSide = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('side')
+			]),
 		_List_fromArray(
 			[
 				A2(
@@ -6964,13 +8683,38 @@ var $author$project$Main$viewSide = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text('Load Image')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Main$AddBox)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Add')
+					])),
+				$author$project$Main$viewHeldBoxInfo(model),
+				$author$project$Main$viewClippedImages(model),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Main$Download)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Download')
 					]))
 			]));
 };
 var $author$project$Main$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('wrapper')
+			]),
 		_List_fromArray(
 			[
 				$author$project$Main$viewMain(model),

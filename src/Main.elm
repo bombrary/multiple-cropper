@@ -20,6 +20,12 @@ import Task
 import Vec as V exposing (Vec)
 
 
+port askClippedImage : JE.Value -> Cmd msg
+
+
+port receiveClippedImage : (JE.Value -> msg) -> Sub msg
+
+
 port askImageInfo : String -> Cmd msg
 
 
@@ -80,13 +86,19 @@ type Msg
     | ImageSelected File
     | ImageEncoded String
     | ImageInfoReceived JE.Value
+    | ClippedImageReceived JE.Value
+    | AddBox
+    | NameChanged BB.Id String
+    | Download
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( { boxies =
             BB.fromList
-                [ BB.bboxOrigin ( 10, 20 ) ( 40, 100 )
+                [ BB.bboxOrigin ( 0, -0.7 ) ( 201, 47 )
+                , BB.bboxOrigin ( 5, 187.6 ) ( 307, 252.3 )
+                , BB.bboxOrigin ( 48, 350 ) ( 199, 490 )
                 ]
       , image = Err "No Image"
       , mouse = Mouse 0 0 0 0
@@ -113,7 +125,9 @@ update msg model =
                     updateMouse x y model
                         |> updateHeldBox
             in
-            ( newModel, Cmd.none )
+            ( newModel
+            , clippedHeldImageCmd newModel
+            )
 
         DragEnded ->
             ( { model
@@ -140,9 +154,51 @@ update msg model =
             )
 
         ImageInfoReceived value ->
-            ( setImage model value
+            let
+                newModel =
+                    setImage model value
+            in
+            ( newModel
+            , allClippedImageCmd newModel
+            )
+
+        ClippedImageReceived value ->
+            ( setClippedImage model value
             , Cmd.none
             )
+
+        AddBox ->
+            let
+                newModel =
+                    addBox model
+
+                id =
+                    model.boxies.nextId
+            in
+            ( newModel
+            , clippedImageCmd id newModel
+            )
+
+        NameChanged id newName ->
+            ( setNewName id newName model
+            , Cmd.none
+            )
+
+        Download ->
+            ( model
+            , Download.bytes "images.zip"
+                "application/zip"
+                (BB.toZip model.boxies)
+            )
+
+
+setNewName : BB.Id -> String -> Model -> Model
+setNewName id newName ({ boxies } as model) =
+    let
+        newBoxies =
+            BB.update id (\b -> { b | name = newName }) boxies
+    in
+    { model | boxies = newBoxies }
 
 
 updateMouse : Float -> Float -> Model -> Model
@@ -161,6 +217,126 @@ updateMouse x y ({ mouse } as model) =
 updateHeldBox : Model -> Model
 updateHeldBox ({ mouse, boxies } as model) =
     { model | boxies = BB.updateHeldBox mouse boxies }
+
+
+type alias ClippedImageProposal =
+    { src : String
+    , id : Int
+    , x : Float
+    , y : Float
+    , width : Float
+    , height : Float
+    }
+
+
+clippedImageProposal : ClippedImageProposal -> JE.Value
+clippedImageProposal { src, id, x, y, width, height } =
+    JE.object
+        [ ( "src", JE.string src )
+        , ( "id", JE.int id )
+        , ( "x", JE.float x )
+        , ( "y", JE.float y )
+        , ( "width", JE.float width )
+        , ( "height", JE.float height )
+        ]
+
+
+clippedImageCmd : BB.Id -> Model -> Cmd Msg
+clippedImageCmd id { boxies, image } =
+    Maybe.withDefault Cmd.none <|
+        Maybe.map2
+            (\box { src, size } ->
+                let
+                    imgBox =
+                        scaleForImg size box
+                in
+                askClippedImage <|
+                    clippedImageProposal
+                        { src = src
+                        , id = id
+                        , x = imgBox.s.x
+                        , y = imgBox.s.y
+                        , width = BB.width imgBox
+                        , height = BB.height imgBox
+                        }
+            )
+            (BB.get id boxies)
+            (Result.toMaybe image)
+
+
+clippedHeldImageCmd : Model -> Cmd Msg
+clippedHeldImageCmd ({ boxies, image } as model) =
+    case boxies.hold of
+        Nothing ->
+            Cmd.none
+
+        Just { id } ->
+            clippedImageCmd id model
+
+
+allClippedImageCmd : Model -> Cmd Msg
+allClippedImageCmd { boxies, image } =
+    Result.withDefault Cmd.none <|
+        Result.map
+            (\{ src, size } ->
+                Cmd.batch <|
+                    BB.toListWith
+                        (\_ id box ->
+                            let
+                                imgBox =
+                                    scaleForImg size box
+                            in
+                            askClippedImage <|
+                                clippedImageProposal
+                                    { src = src
+                                    , id = id
+                                    , x = imgBox.s.x
+                                    , y = imgBox.s.y
+                                    , width = BB.width imgBox
+                                    , height = BB.height imgBox
+                                    }
+                        )
+                        boxies
+            )
+            image
+
+
+addBox : Model -> Model
+addBox ({ image } as model) =
+    case image of
+        Err _ ->
+            model
+
+        Ok { src, size } ->
+            let
+                l =
+                    100
+
+                c =
+                    Vec (svgWidth size / 2) (svgHeight size / 2)
+
+                s =
+                    V.toTuple <| V.add c (Vec (-l / 2) (-l / 2))
+
+                t =
+                    V.toTuple <| V.add c (Vec (l / 2) (l / 2))
+
+                newBox =
+                    BB.bboxOrigin s t
+            in
+            { model | boxies = BB.add (BB.bboxOrigin ( 5, 252 ) ( 307, 187 )) model.boxies }
+
+
+scaleForImg : Rect -> BB.BBox -> BB.BBox
+scaleForImg rect ({ s, t } as bbox) =
+    let
+        r =
+            rect.width / svgWidth rect
+    in
+    { bbox
+        | s = V.scale r s
+        , t = V.scale r t
+    }
 
 
 setImage : Model -> JE.Value -> Model
@@ -191,13 +367,39 @@ setImage model value =
     { model | image = image }
 
 
+setClippedImage : Model -> JE.Value -> Model
+setClippedImage ({ boxies } as model) value =
+    let
+        idAndSrc id src =
+            { id = id, src = src }
+
+        decoder =
+            JD.map2 idAndSrc
+                (JD.field "id" JD.int)
+                (JD.field "src" JD.string)
+    in
+    case JD.decodeValue decoder value of
+        Err _ ->
+            model
+
+        Ok { id, src } ->
+            { model
+                | boxies =
+                    BB.update id
+                        (\b -> { b | clippedImg = Just src })
+                        model.boxies
+            }
+
+
 
 --- view
 
 
 view : Model -> Html Msg
 view model =
-    div []
+    div
+        [ class "wrapper"
+        ]
         [ viewMain model
         , viewSide model
         ]
@@ -219,6 +421,7 @@ viewMain ({ image } as model) =
                 , style "height" (String.fromFloat (svgHeight size))
                 , style "border" "1px solid #000"
                 , onMouseMove Dragged
+                , SA.class "main"
                 ]
                 [ viewImage justImage
                 , viewBoxies model
@@ -443,18 +646,18 @@ styleCursor anchor =
 
 
 dMoveTo : Vec -> String
-dMoveTo { x, y } =
-    "M" ++ String.fromFloat x ++ "," ++ String.fromFloat y
+dMoveTo v =
+    "M" ++ V.toString v
 
 
 dLineTo : Vec -> String
-dLineTo { x, y } =
-    "L" ++ String.fromFloat x ++ "," ++ String.fromFloat y
+dLineTo v =
+    "L" ++ V.toString v
 
 
 translate : Vec -> String
-translate { x, y } =
-    "translate(" ++ String.fromFloat x ++ "," ++ String.fromFloat y ++ ")"
+translate v =
+    "translate(" ++ V.toString v ++ ")"
 
 
 
@@ -463,9 +666,66 @@ translate { x, y } =
 
 viewSide : Model -> Html Msg
 viewSide model =
-    div []
-        [ button [ onClick ImageRequested ] [ text "Load Image" ]
+    div
+        [ class "side"
         ]
+        [ button [ onClick ImageRequested ] [ text "Load Image" ]
+        , button [ onClick AddBox ] [ text "Add" ]
+        , viewHeldBoxInfo model
+        , viewClippedImages model
+        , button [ onClick Download ] [ text "Download" ]
+        ]
+
+
+viewHeldBoxInfo : Model -> Html Msg
+viewHeldBoxInfo model =
+    case BB.getSelectedBox model.boxies of
+        Nothing ->
+            div [] []
+
+        Just box ->
+            div []
+                [ p []
+                    [ text <| "(" ++ V.toString box.s ++ ")" ]
+                , p []
+                    [ text <| "(" ++ V.toString box.t ++ ")" ]
+                ]
+
+
+viewClippedImages : Model -> Html Msg
+viewClippedImages ({ boxies } as model) =
+    div [ class "clipped-images" ] <|
+        List.map
+            (viewClippedImage model)
+            (BB.toListWith Box boxies)
+
+
+viewClippedImage : Model -> Box -> Html Msg
+viewClippedImage model { id, bbox } =
+    case bbox.clippedImg of
+        Nothing ->
+            p [] [ text "No Image" ]
+
+        Just url ->
+            div []
+                [ img
+                    [ src url
+                    , style "width" "200px"
+                    , style "height" "auto"
+                    , style "border" "1px solid #333"
+                    ]
+                    []
+                , input
+                    [ onInput (NameChanged id)
+                    , placeholder (String.fromInt id)
+                    ]
+                    []
+                , span [] [ text ".png" ]
+                ]
+
+
+
+-- subscriptions
 
 
 subscriptions : Model -> Sub Msg
@@ -473,4 +733,5 @@ subscriptions model =
     Sub.batch
         [ receiveImageInfo ImageInfoReceived
         , BE.onMouseUp (JD.succeed DragEnded)
+        , receiveClippedImage ClippedImageReceived
         ]

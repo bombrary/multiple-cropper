@@ -32,6 +32,9 @@ port askImageInfo : String -> Cmd msg
 port receiveImageInfo : (JE.Value -> msg) -> Sub msg
 
 
+port onKeyDown : (JE.Value -> msg) -> Sub msg
+
+
 svgWidth : Rect -> Float
 svgWidth rect =
     500
@@ -78,6 +81,19 @@ type alias Rect =
     }
 
 
+type Key
+    = Delete
+    | Arrow Direction
+    | Others String
+
+
+type Direction
+    = Up
+    | Right
+    | Down
+    | Left
+
+
 type Msg
     = DragStarted BB.HoldInfo
     | Dragged Float Float
@@ -89,8 +105,11 @@ type Msg
     | ClippedImageReceived JE.Value
     | AddBox
     | CopyBox
+    | DeleteBox
     | NameChanged BB.Id String
     | Download
+    | MoveBox Direction
+    | KeyPressed Key
 
 
 init : () -> ( Model, Cmd Msg )
@@ -192,6 +211,15 @@ update msg model =
             , clippedImageCmd id newModel
             )
 
+        DeleteBox ->
+            let
+                newModel =
+                    deleteBox model
+            in
+            ( newModel
+            , Cmd.none
+            )
+
         NameChanged id newName ->
             ( setNewName id newName model
             , Cmd.none
@@ -203,6 +231,31 @@ update msg model =
                 "application/zip"
                 (BB.toZip model.boxies)
             )
+
+        MoveBox dir ->
+            let
+                newModel =
+                    moveSelectedBox dir model
+
+                cmd =
+                    Maybe.withDefault Cmd.none <|
+                        Maybe.map (\id -> clippedImageCmd id newModel)
+                            model.boxies.select
+            in
+            ( moveSelectedBox dir model
+            , cmd
+            )
+
+        KeyPressed key ->
+            case key of
+                Arrow dir ->
+                    update (MoveBox dir) model
+
+                Delete ->
+                    update DeleteBox model
+
+                Others _ ->
+                    ( model, Cmd.none )
 
 
 setNewName : BB.Id -> String -> Model -> Model
@@ -356,6 +409,43 @@ copyBox ({ image, boxies } as model) =
             { model | boxies = BB.add newBox boxies }
 
 
+deleteBox : Model -> Model
+deleteBox ({ boxies } as model) =
+    case boxies.select of
+        Nothing ->
+            model
+
+        Just id ->
+            { model | boxies = BB.remove id boxies }
+
+
+moveSelectedBox : Direction -> Model -> Model
+moveSelectedBox dir ({ boxies } as model) =
+    case boxies.select of
+        Nothing ->
+            model
+
+        Just id ->
+            let
+                move dx dy =
+                    BB.update id
+                        (BB.transform { x = 0, y = 0, dx = dx, dy = dy } BB.Inner)
+                        boxies
+            in
+            case dir of
+                Up ->
+                    { model | boxies = move 0 -1 }
+
+                Right ->
+                    { model | boxies = move 1 0 }
+
+                Down ->
+                    { model | boxies = move 0 1 }
+
+                Left ->
+                    { model | boxies = move -1 0 }
+
+
 scaleForImg : Rect -> BB.BBox -> BB.BBox
 scaleForImg rect ({ s, t } as bbox) =
     let
@@ -445,15 +535,20 @@ viewMain ({ image } as model) =
             p [] [ text info ]
 
         Ok ({ src, size } as justImage) ->
-            S.svg
-                [ style "width" (String.fromFloat (svgWidth size))
-                , style "height" (String.fromFloat (svgHeight size))
-                , style "border" "1px solid #000"
-                , onMouseMove Dragged
-                , SA.class "main"
+            div
+                [ tabindex 0
+                , id "main"
                 ]
-                [ viewImage justImage
-                , viewBoxies model
+                [ S.svg
+                    [ style "width" (String.fromFloat (svgWidth size))
+                    , style "height" (String.fromFloat (svgHeight size))
+                    , style "border" "1px solid #000"
+                    , onMouseMove Dragged
+                    , SA.class "main"
+                    ]
+                    [ viewImage justImage
+                    , viewBoxies model
+                    ]
                 ]
 
 
@@ -622,22 +717,17 @@ viewBoxLabel model { id, bbox } =
                     Basics.min width height / 2 - 10
 
                 s =
-                    0.3 * Basics.sqrt r
+                    if r < 0 then
+                        0
+
+                    else
+                        0.5 * Basics.sqrt r
             in
             S.g
                 [ SA.transform <| translate (Vec (width / 2) (height / 2))
                 , SA.opacity "0.7"
                 ]
-                [ S.circle
-                    [ SA.cx "0"
-                    , SA.cy "0"
-                    , SA.fill "none"
-                    , SA.stroke "white"
-                    , SA.strokeWidth "2"
-                    , SA.r (String.fromFloat r)
-                    ]
-                    []
-                , S.text_
+                [ S.text_
                     [ SA.style "user-select: none;"
                     , SA.transform <| "scale(" ++ String.fromFloat s ++ ")"
                     , SA.textAnchor "middle"
@@ -760,6 +850,7 @@ viewSide model =
         [ button [ onClick ImageRequested ] [ text "Load Image" ]
         , button [ onClick AddBox ] [ text "Add" ]
         , button [ onClick CopyBox ] [ text "Copy" ]
+        , button [ onClick DeleteBox ] [ text "Delete" ]
         , viewClippedImages model
         , button [ onClick Download ] [ text "Download" ]
         ]
@@ -826,4 +917,37 @@ subscriptions model =
         [ receiveImageInfo ImageInfoReceived
         , BE.onMouseUp (JD.succeed DragEnded)
         , receiveClippedImage ClippedImageReceived
+        , onKeyDown keyDecode
         ]
+
+
+keyDecode : JE.Value -> Msg
+keyDecode value =
+    Result.withDefault (KeyPressed (Others "undefined")) <|
+        JD.decodeValue keyDecoder value
+
+
+keyDecoder : JD.Decoder Msg
+keyDecoder =
+    JD.field "key" JD.string
+        |> JD.map
+            (\key ->
+                case key of
+                    "Delete" ->
+                        KeyPressed Delete
+
+                    "ArrowUp" ->
+                        KeyPressed (Arrow Up)
+
+                    "ArrowRight" ->
+                        KeyPressed (Arrow Right)
+
+                    "ArrowDown" ->
+                        KeyPressed (Arrow Down)
+
+                    "ArrowLeft" ->
+                        KeyPressed (Arrow Left)
+
+                    c ->
+                        KeyPressed (Others c)
+            )

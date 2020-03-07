@@ -44,12 +44,14 @@
           app.ports.receiveImageInfo.send();
         }
       });
-      /*window.addEventListener('keydown', (e) => {
-        app.ports.preventDefaultOnKeyDown.send({ key: e.key });
-        if (e.key == "ArrowUp" || e.key == "ArrowDown") {
-          e.preventDefault();
+      window.addEventListener('keydown', (e) => {
+        if (document.activeElement.id == "main") {
+          app.ports.onKeyDown.send({ key: e.key });
+          if (e.key == "ArrowUp" || e.key == "ArrowDown") {
+            e.preventDefault();
+          }
         }
-      });*/
+      });
     </script>
   </body>
 </html>

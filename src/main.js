@@ -5738,6 +5738,66 @@ var $author$project$Main$ImageInfoReceived = function (a) {
 	return {$: 'ImageInfoReceived', a: a};
 };
 var $elm$core$Platform$Sub$batch = _Platform_batch;
+var $author$project$Main$KeyPressed = function (a) {
+	return {$: 'KeyPressed', a: a};
+};
+var $author$project$Main$Others = function (a) {
+	return {$: 'Others', a: a};
+};
+var $elm$json$Json$Decode$decodeValue = _Json_run;
+var $author$project$Main$Arrow = function (a) {
+	return {$: 'Arrow', a: a};
+};
+var $author$project$Main$Delete = {$: 'Delete'};
+var $author$project$Main$Down = {$: 'Down'};
+var $author$project$Main$Left = {$: 'Left'};
+var $author$project$Main$Right = {$: 'Right'};
+var $author$project$Main$Up = {$: 'Up'};
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $elm$json$Json$Decode$string = _Json_decodeString;
+var $author$project$Main$keyDecoder = A2(
+	$elm$json$Json$Decode$map,
+	function (key) {
+		switch (key) {
+			case 'Delete':
+				return $author$project$Main$KeyPressed($author$project$Main$Delete);
+			case 'ArrowUp':
+				return $author$project$Main$KeyPressed(
+					$author$project$Main$Arrow($author$project$Main$Up));
+			case 'ArrowRight':
+				return $author$project$Main$KeyPressed(
+					$author$project$Main$Arrow($author$project$Main$Right));
+			case 'ArrowDown':
+				return $author$project$Main$KeyPressed(
+					$author$project$Main$Arrow($author$project$Main$Down));
+			case 'ArrowLeft':
+				return $author$project$Main$KeyPressed(
+					$author$project$Main$Arrow($author$project$Main$Left));
+			default:
+				var c = key;
+				return $author$project$Main$KeyPressed(
+					$author$project$Main$Others(c));
+		}
+	},
+	A2($elm$json$Json$Decode$field, 'key', $elm$json$Json$Decode$string));
+var $elm$core$Result$withDefault = F2(
+	function (def, result) {
+		if (result.$ === 'Ok') {
+			var a = result.a;
+			return a;
+		} else {
+			return def;
+		}
+	});
+var $author$project$Main$keyDecode = function (value) {
+	return A2(
+		$elm$core$Result$withDefault,
+		$author$project$Main$KeyPressed(
+			$author$project$Main$Others('undefined')),
+		A2($elm$json$Json$Decode$decodeValue, $author$project$Main$keyDecoder, value));
+};
+var $elm$json$Json$Decode$value = _Json_decodeValue;
+var $author$project$Main$onKeyDown = _Platform_incomingPort('onKeyDown', $elm$json$Json$Decode$value);
 var $elm$browser$Browser$Events$Document = {$: 'Document'};
 var $elm$browser$Browser$Events$MySub = F3(
 	function (a, b, c) {
@@ -6016,7 +6076,6 @@ var $elm$browser$Browser$Events$on = F3(
 			A3($elm$browser$Browser$Events$MySub, node, name, decoder));
 	});
 var $elm$browser$Browser$Events$onMouseUp = A2($elm$browser$Browser$Events$on, $elm$browser$Browser$Events$Document, 'mouseup');
-var $elm$json$Json$Decode$value = _Json_decodeValue;
 var $author$project$Main$receiveClippedImage = _Platform_incomingPort('receiveClippedImage', $elm$json$Json$Decode$value);
 var $author$project$Main$receiveImageInfo = _Platform_incomingPort('receiveImageInfo', $elm$json$Json$Decode$value);
 var $author$project$Main$subscriptions = function (model) {
@@ -6026,14 +6085,19 @@ var $author$project$Main$subscriptions = function (model) {
 				$author$project$Main$receiveImageInfo($author$project$Main$ImageInfoReceived),
 				$elm$browser$Browser$Events$onMouseUp(
 				$elm$json$Json$Decode$succeed($author$project$Main$DragEnded)),
-				$author$project$Main$receiveClippedImage($author$project$Main$ClippedImageReceived)
+				$author$project$Main$receiveClippedImage($author$project$Main$ClippedImageReceived),
+				$author$project$Main$onKeyDown($author$project$Main$keyDecode)
 			]));
 };
+var $author$project$Main$DeleteBox = {$: 'DeleteBox'};
 var $author$project$Main$ImageEncoded = function (a) {
 	return {$: 'ImageEncoded', a: a};
 };
 var $author$project$Main$ImageSelected = function (a) {
 	return {$: 'ImageSelected', a: a};
+};
+var $author$project$Main$MoveBox = function (a) {
+	return {$: 'MoveBox', a: a};
 };
 var $author$project$Vec$Vec = F2(
 	function (x, y) {
@@ -6264,15 +6328,6 @@ var $author$project$BBox$width = function (_v0) {
 	return $author$project$Vec$abs(
 		A2($author$project$Vec$sub, t, s)).x;
 };
-var $elm$core$Result$withDefault = F2(
-	function (def, result) {
-		if (result.$ === 'Ok') {
-			var a = result.a;
-			return a;
-		} else {
-			return def;
-		}
-	});
 var $author$project$Main$allClippedImageCmd = function (_v0) {
 	var boxies = _v0.boxies;
 	var image = _v0.image;
@@ -6466,18 +6521,6 @@ var $author$project$Main$copyBox = function (model) {
 			});
 	}
 };
-var $author$project$BBoxies$empty = {entities: $elm$core$Dict$empty, hold: $elm$core$Maybe$Nothing, nextId: 0, select: $elm$core$Maybe$Nothing};
-var $elm$file$File$Select$file = F2(
-	function (mimes, toMsg) {
-		return A2(
-			$elm$core$Task$perform,
-			toMsg,
-			_File_uploadOne(mimes));
-	});
-var $elm$json$Json$Decode$decodeValue = _Json_run;
-var $elm$json$Json$Decode$field = _Json_decodeField;
-var $elm$json$Json$Decode$int = _Json_decodeInt;
-var $elm$json$Json$Decode$string = _Json_decodeString;
 var $elm$core$Dict$getMin = function (dict) {
 	getMin:
 	while (true) {
@@ -6840,6 +6883,147 @@ var $elm$core$Dict$remove = F2(
 			return x;
 		}
 	});
+var $author$project$BBoxies$remove = F2(
+	function (i, bboxies) {
+		return _Utils_update(
+			bboxies,
+			{
+				entities: A2($elm$core$Dict$remove, i, bboxies.entities)
+			});
+	});
+var $author$project$Main$deleteBox = function (model) {
+	var boxies = model.boxies;
+	var _v0 = boxies.select;
+	if (_v0.$ === 'Nothing') {
+		return model;
+	} else {
+		var id = _v0.a;
+		return _Utils_update(
+			model,
+			{
+				boxies: A2($author$project$BBoxies$remove, id, boxies)
+			});
+	}
+};
+var $author$project$BBoxies$empty = {entities: $elm$core$Dict$empty, hold: $elm$core$Maybe$Nothing, nextId: 0, select: $elm$core$Maybe$Nothing};
+var $elm$file$File$Select$file = F2(
+	function (mimes, toMsg) {
+		return A2(
+			$elm$core$Task$perform,
+			toMsg,
+			_File_uploadOne(mimes));
+	});
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $author$project$BBox$Inner = {$: 'Inner'};
+var $author$project$BBox$transform = F3(
+	function (_v0, anchor, box) {
+		var dx = _v0.dx;
+		var dy = _v0.dy;
+		switch (anchor.$) {
+			case 'Inner':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, dx, dy)),
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, dx, dy))
+					});
+			case 'Above':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, 0, dy))
+					});
+			case 'Right':
+				return _Utils_update(
+					box,
+					{
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, dx, 0))
+					});
+			case 'Below':
+				return _Utils_update(
+					box,
+					{
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, 0, dy))
+					});
+			case 'Left':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, dx, 0))
+					});
+			case 'AboveLeft':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, dx, dy))
+					});
+			case 'AboveRight':
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, 0, dy)),
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, dx, 0))
+					});
+			case 'BelowRight':
+				return _Utils_update(
+					box,
+					{
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, dx, dy))
+					});
+			default:
+				return _Utils_update(
+					box,
+					{
+						s: A2(
+							$author$project$Vec$add,
+							box.s,
+							A2($author$project$Vec$Vec, dx, 0)),
+						t: A2(
+							$author$project$Vec$add,
+							box.t,
+							A2($author$project$Vec$Vec, 0, dy))
+					});
+		}
+	});
 var $elm$core$Dict$update = F3(
 	function (targetKey, alter, dictionary) {
 		var _v0 = alter(
@@ -6867,6 +7051,54 @@ var $author$project$BBoxies$update = F3(
 			bboxies,
 			{entities: newEntities});
 	});
+var $author$project$Main$moveSelectedBox = F2(
+	function (dir, model) {
+		var boxies = model.boxies;
+		var _v0 = boxies.select;
+		if (_v0.$ === 'Nothing') {
+			return model;
+		} else {
+			var id = _v0.a;
+			var move = F2(
+				function (dx, dy) {
+					return A3(
+						$author$project$BBoxies$update,
+						id,
+						A2(
+							$author$project$BBox$transform,
+							{dx: dx, dy: dy, x: 0, y: 0},
+							$author$project$BBox$Inner),
+						boxies);
+				});
+			switch (dir.$) {
+				case 'Up':
+					return _Utils_update(
+						model,
+						{
+							boxies: A2(move, 0, -1)
+						});
+				case 'Right':
+					return _Utils_update(
+						model,
+						{
+							boxies: A2(move, 1, 0)
+						});
+				case 'Down':
+					return _Utils_update(
+						model,
+						{
+							boxies: A2(move, 0, 1)
+						});
+				default:
+					return _Utils_update(
+						model,
+						{
+							boxies: A2(move, -1, 0)
+						});
+			}
+		}
+	});
+var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $author$project$Main$setClippedImage = F2(
 	function (model, value) {
 		var boxies = model.boxies;
@@ -7338,16 +7570,6 @@ var $elm$core$Array$get = F2(
 			$elm$core$Array$tailIndex(len)) > -1) ? $elm$core$Maybe$Just(
 			A2($elm$core$Elm$JsArray$unsafeGet, $elm$core$Array$bitMask & index, tail)) : $elm$core$Maybe$Just(
 			A3($elm$core$Array$getHelp, startShift, index, tree)));
-	});
-var $elm$core$Maybe$map = F2(
-	function (f, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return $elm$core$Maybe$Just(
-				f(value));
-		} else {
-			return $elm$core$Maybe$Nothing;
-		}
 	});
 var $elm$core$Array$fromListHelp = F3(
 	function (list, nodeList, nodeListSize) {
@@ -7910,106 +8132,6 @@ var $author$project$BBox$normalize = function (box) {
 			t: A2($author$project$Vec$max, s, t)
 		});
 };
-var $author$project$BBox$transform = F3(
-	function (_v0, anchor, box) {
-		var dx = _v0.dx;
-		var dy = _v0.dy;
-		switch (anchor.$) {
-			case 'Inner':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, dx, dy)),
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, dx, dy))
-					});
-			case 'Above':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, 0, dy))
-					});
-			case 'Right':
-				return _Utils_update(
-					box,
-					{
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, dx, 0))
-					});
-			case 'Below':
-				return _Utils_update(
-					box,
-					{
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, 0, dy))
-					});
-			case 'Left':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, dx, 0))
-					});
-			case 'AboveLeft':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, dx, dy))
-					});
-			case 'AboveRight':
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, 0, dy)),
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, dx, 0))
-					});
-			case 'BelowRight':
-				return _Utils_update(
-					box,
-					{
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, dx, dy))
-					});
-			default:
-				return _Utils_update(
-					box,
-					{
-						s: A2(
-							$author$project$Vec$add,
-							box.s,
-							A2($author$project$Vec$Vec, dx, 0)),
-						t: A2(
-							$author$project$Vec$add,
-							box.t,
-							A2($author$project$Vec$Vec, 0, dy))
-					});
-		}
-	});
 var $author$project$BBoxies$updateHeldBox = F2(
 	function (mouse, bboxies) {
 		var hold = bboxies.hold;
@@ -8047,96 +8169,136 @@ var $author$project$Main$updateMouse = F3(
 	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
-		switch (msg.$) {
-			case 'DragStarted':
-				var holdInfo = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
+		update:
+		while (true) {
+			switch (msg.$) {
+				case 'DragStarted':
+					var holdInfo = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								boxies: A2(
+									$author$project$BBoxies$toggleSelect,
+									$elm$core$Maybe$Just(holdInfo.id),
+									A2(
+										$author$project$BBoxies$toggleHold,
+										$elm$core$Maybe$Just(holdInfo),
+										model.boxies))
+							}),
+						$elm$core$Platform$Cmd$none);
+				case 'Dragged':
+					var x = msg.a;
+					var y = msg.b;
+					var newModel = $author$project$Main$updateHeldBox(
+						A3($author$project$Main$updateMouse, x, y, model));
+					return _Utils_Tuple2(newModel, $elm$core$Platform$Cmd$none);
+				case 'DragEnded':
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								boxies: A2($author$project$BBoxies$toggleHold, $elm$core$Maybe$Nothing, model.boxies)
+							}),
+						$author$project$Main$clippedHeldImageCmd(model));
+				case 'ImageRequested':
+					return _Utils_Tuple2(
 						model,
-						{
-							boxies: A2(
-								$author$project$BBoxies$toggleSelect,
-								$elm$core$Maybe$Just(holdInfo.id),
-								A2(
-									$author$project$BBoxies$toggleHold,
-									$elm$core$Maybe$Just(holdInfo),
-									model.boxies))
-						}),
-					$elm$core$Platform$Cmd$none);
-			case 'Dragged':
-				var x = msg.a;
-				var y = msg.b;
-				var newModel = $author$project$Main$updateHeldBox(
-					A3($author$project$Main$updateMouse, x, y, model));
-				return _Utils_Tuple2(newModel, $elm$core$Platform$Cmd$none);
-			case 'DragEnded':
-				return _Utils_Tuple2(
-					_Utils_update(
+						A2(
+							$elm$file$File$Select$file,
+							_List_fromArray(
+								['image/bmp', 'image/gif', 'image/jpeg', 'image/png']),
+							$author$project$Main$ImageSelected));
+				case 'ImageSelected':
+					var file = msg.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{boxies: $author$project$BBoxies$empty}),
+						A2(
+							$elm$core$Task$perform,
+							$author$project$Main$ImageEncoded,
+							$elm$file$File$toUrl(file)));
+				case 'ImageEncoded':
+					var url = msg.a;
+					return _Utils_Tuple2(
 						model,
-						{
-							boxies: A2($author$project$BBoxies$toggleHold, $elm$core$Maybe$Nothing, model.boxies)
-						}),
-					$author$project$Main$clippedHeldImageCmd(model));
-			case 'ImageRequested':
-				return _Utils_Tuple2(
-					model,
-					A2(
-						$elm$file$File$Select$file,
-						_List_fromArray(
-							['image/bmp', 'image/gif', 'image/jpeg', 'image/png']),
-						$author$project$Main$ImageSelected));
-			case 'ImageSelected':
-				var file = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
+						$author$project$Main$askImageInfo(url));
+				case 'ImageInfoReceived':
+					var value = msg.a;
+					var newModel = A2($author$project$Main$setImage, model, value);
+					return _Utils_Tuple2(
+						newModel,
+						$author$project$Main$allClippedImageCmd(newModel));
+				case 'ClippedImageReceived':
+					var value = msg.a;
+					return _Utils_Tuple2(
+						A2($author$project$Main$setClippedImage, model, value),
+						$elm$core$Platform$Cmd$none);
+				case 'AddBox':
+					var newModel = $author$project$Main$addBox(model);
+					var id = model.boxies.nextId;
+					return _Utils_Tuple2(
+						newModel,
+						A2($author$project$Main$clippedImageCmd, id, newModel));
+				case 'CopyBox':
+					var newModel = $author$project$Main$copyBox(model);
+					var id = model.boxies.nextId;
+					return _Utils_Tuple2(
+						newModel,
+						A2($author$project$Main$clippedImageCmd, id, newModel));
+				case 'DeleteBox':
+					var newModel = $author$project$Main$deleteBox(model);
+					return _Utils_Tuple2(newModel, $elm$core$Platform$Cmd$none);
+				case 'NameChanged':
+					var id = msg.a;
+					var newName = msg.b;
+					return _Utils_Tuple2(
+						A3($author$project$Main$setNewName, id, newName, model),
+						$elm$core$Platform$Cmd$none);
+				case 'Download':
+					return _Utils_Tuple2(
 						model,
-						{boxies: $author$project$BBoxies$empty}),
-					A2(
-						$elm$core$Task$perform,
-						$author$project$Main$ImageEncoded,
-						$elm$file$File$toUrl(file)));
-			case 'ImageEncoded':
-				var url = msg.a;
-				return _Utils_Tuple2(
-					model,
-					$author$project$Main$askImageInfo(url));
-			case 'ImageInfoReceived':
-				var value = msg.a;
-				var newModel = A2($author$project$Main$setImage, model, value);
-				return _Utils_Tuple2(
-					newModel,
-					$author$project$Main$allClippedImageCmd(newModel));
-			case 'ClippedImageReceived':
-				var value = msg.a;
-				return _Utils_Tuple2(
-					A2($author$project$Main$setClippedImage, model, value),
-					$elm$core$Platform$Cmd$none);
-			case 'AddBox':
-				var newModel = $author$project$Main$addBox(model);
-				var id = model.boxies.nextId;
-				return _Utils_Tuple2(
-					newModel,
-					A2($author$project$Main$clippedImageCmd, id, newModel));
-			case 'CopyBox':
-				var newModel = $author$project$Main$copyBox(model);
-				var id = model.boxies.nextId;
-				return _Utils_Tuple2(
-					newModel,
-					A2($author$project$Main$clippedImageCmd, id, newModel));
-			case 'NameChanged':
-				var id = msg.a;
-				var newName = msg.b;
-				return _Utils_Tuple2(
-					A3($author$project$Main$setNewName, id, newName, model),
-					$elm$core$Platform$Cmd$none);
-			default:
-				return _Utils_Tuple2(
-					model,
-					A3(
-						$elm$file$File$Download$bytes,
-						'images.zip',
-						'application/zip',
-						$author$project$BBoxies$toZip(model.boxies)));
+						A3(
+							$elm$file$File$Download$bytes,
+							'images.zip',
+							'application/zip',
+							$author$project$BBoxies$toZip(model.boxies)));
+				case 'MoveBox':
+					var dir = msg.a;
+					var newModel = A2($author$project$Main$moveSelectedBox, dir, model);
+					var cmd = A2(
+						$elm$core$Maybe$withDefault,
+						$elm$core$Platform$Cmd$none,
+						A2(
+							$elm$core$Maybe$map,
+							function (id) {
+								return A2($author$project$Main$clippedImageCmd, id, newModel);
+							},
+							model.boxies.select));
+					return _Utils_Tuple2(
+						A2($author$project$Main$moveSelectedBox, dir, model),
+						cmd);
+				default:
+					var key = msg.a;
+					switch (key.$) {
+						case 'Arrow':
+							var dir = key.a;
+							var $temp$msg = $author$project$Main$MoveBox(dir),
+								$temp$model = model;
+							msg = $temp$msg;
+							model = $temp$model;
+							continue update;
+						case 'Delete':
+							var $temp$msg = $author$project$Main$DeleteBox,
+								$temp$model = model;
+							msg = $temp$msg;
+							model = $temp$model;
+							continue update;
+						default:
+							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+			}
 		}
 	});
 var $elm$html$Html$Attributes$stringProperty = F2(
@@ -8154,6 +8316,7 @@ var $author$project$Main$Dragged = F2(
 	});
 var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
 var $elm$core$String$fromFloat = _String_fromNumber;
+var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
 	return {$: 'Normal', a: a};
 };
@@ -8181,6 +8344,12 @@ var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
 var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
+var $elm$html$Html$Attributes$tabindex = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'tabIndex',
+		$elm$core$String$fromInt(n));
+};
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $elm$svg$Svg$g = $elm$svg$Svg$trustedNode('g');
@@ -8246,7 +8415,6 @@ var $author$project$BBoxies$HoldInfo = F2(
 	function (id, anchor) {
 		return {anchor: anchor, id: id};
 	});
-var $author$project$BBox$Inner = {$: 'Inner'};
 var $elm$svg$Svg$Events$onMouseDown = function (msg) {
 	return A2(
 		$elm$html$Html$Events$on,
@@ -8471,11 +8639,7 @@ var $author$project$Main$viewBoxEdges = F2(
 				$author$project$Main$viewBoxEdge(model),
 				$author$project$Main$edgeViews(box)));
 	});
-var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
-var $elm$svg$Svg$Attributes$cx = _VirtualDom_attribute('cx');
-var $elm$svg$Svg$Attributes$cy = _VirtualDom_attribute('cy');
 var $elm$svg$Svg$Attributes$dominantBaseline = _VirtualDom_attribute('dominant-baseline');
-var $elm$svg$Svg$Attributes$r = _VirtualDom_attribute('r');
 var $elm$core$Basics$sqrt = _Basics_sqrt;
 var $elm$svg$Svg$Attributes$style = _VirtualDom_attribute('style');
 var $elm$svg$Svg$text = $elm$virtual_dom$VirtualDom$text;
@@ -8493,7 +8657,7 @@ var $author$project$Main$viewBoxLabel = F2(
 			var width = $author$project$BBox$width(bbox);
 			var height = $author$project$BBox$height(bbox);
 			var r = (A2($elm$core$Basics$min, width, height) / 2) - 10;
-			var s = 0.3 * $elm$core$Basics$sqrt(r);
+			var s = (r < 0) ? 0 : (0.5 * $elm$core$Basics$sqrt(r));
 			return A2(
 				$elm$svg$Svg$g,
 				_List_fromArray(
@@ -8505,19 +8669,6 @@ var $author$project$Main$viewBoxLabel = F2(
 					]),
 				_List_fromArray(
 					[
-						A2(
-						$elm$svg$Svg$circle,
-						_List_fromArray(
-							[
-								$elm$svg$Svg$Attributes$cx('0'),
-								$elm$svg$Svg$Attributes$cy('0'),
-								$elm$svg$Svg$Attributes$fill('none'),
-								$elm$svg$Svg$Attributes$stroke('white'),
-								$elm$svg$Svg$Attributes$strokeWidth('2'),
-								$elm$svg$Svg$Attributes$r(
-								$elm$core$String$fromFloat(r))
-							]),
-						_List_Nil),
 						A2(
 						$elm$svg$Svg$text_,
 						_List_fromArray(
@@ -8612,27 +8763,37 @@ var $author$project$Main$viewMain = function (model) {
 		var src = justImage.src;
 		var size = justImage.size;
 		return A2(
-			$elm$svg$Svg$svg,
+			$elm$html$Html$div,
 			_List_fromArray(
 				[
-					A2(
-					$elm$html$Html$Attributes$style,
-					'width',
-					$elm$core$String$fromFloat(
-						$author$project$Main$svgWidth(size))),
-					A2(
-					$elm$html$Html$Attributes$style,
-					'height',
-					$elm$core$String$fromFloat(
-						$author$project$Main$svgHeight(size))),
-					A2($elm$html$Html$Attributes$style, 'border', '1px solid #000'),
-					$author$project$Main$onMouseMove($author$project$Main$Dragged),
-					$elm$svg$Svg$Attributes$class('main')
+					$elm$html$Html$Attributes$tabindex(0),
+					$elm$html$Html$Attributes$id('main')
 				]),
 			_List_fromArray(
 				[
-					$author$project$Main$viewImage(justImage),
-					$author$project$Main$viewBoxies(model)
+					A2(
+					$elm$svg$Svg$svg,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$Attributes$style,
+							'width',
+							$elm$core$String$fromFloat(
+								$author$project$Main$svgWidth(size))),
+							A2(
+							$elm$html$Html$Attributes$style,
+							'height',
+							$elm$core$String$fromFloat(
+								$author$project$Main$svgHeight(size))),
+							A2($elm$html$Html$Attributes$style, 'border', '1px solid #000'),
+							$author$project$Main$onMouseMove($author$project$Main$Dragged),
+							$elm$svg$Svg$Attributes$class('main')
+						]),
+					_List_fromArray(
+						[
+							$author$project$Main$viewImage(justImage),
+							$author$project$Main$viewBoxies(model)
+						]))
 				]));
 	}
 };
@@ -8793,6 +8954,16 @@ var $author$project$Main$viewSide = function (model) {
 				_List_fromArray(
 					[
 						$elm$html$Html$text('Copy')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick($author$project$Main$DeleteBox)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Delete')
 					])),
 				$author$project$Main$viewClippedImages(model),
 				A2(

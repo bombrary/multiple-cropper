@@ -58,6 +58,13 @@ type alias Model =
     { boxies : BB.BBoxies
     , image : Result String Image
     , mouse : Mouse
+    , clippedImageRange : Range
+    }
+
+
+type alias Range =
+    { s : Int
+    , t : Int
     }
 
 
@@ -104,12 +111,13 @@ type Msg
     | ImageInfoReceived JE.Value
     | ClippedImageReceived JE.Value
     | AddBox
-    | CopyBox
+    | DuplicateBox
     | DeleteBox
     | NameChanged BB.Id String
     | Download
     | MoveBox Direction
     | KeyPressed Key
+    | ChangeClippedImageRange Int
 
 
 init : () -> ( Model, Cmd Msg )
@@ -122,6 +130,7 @@ init _ =
                 ]
       , image = Err "No Image"
       , mouse = Mouse 0 0 0 0
+      , clippedImageRange = Range 0 3
       }
     , askImageInfo "img/sample.png"
     )
@@ -164,7 +173,10 @@ update msg model =
             )
 
         ImageSelected file ->
-            ( { model | boxies = BB.empty }
+            ( { model
+                | boxies = BB.empty
+                , clippedImageRange = Range 0 0
+              }
             , Task.perform ImageEncoded (File.toUrl file)
             )
 
@@ -191,6 +203,7 @@ update msg model =
             let
                 newModel =
                     addBox model
+                        |> updateClippedImageRange 0
 
                 id =
                     model.boxies.nextId
@@ -199,10 +212,11 @@ update msg model =
             , clippedImageCmd id newModel
             )
 
-        CopyBox ->
+        DuplicateBox ->
             let
                 newModel =
                     copyBox model
+                        |> updateClippedImageRange 0
 
                 id =
                     model.boxies.nextId
@@ -215,6 +229,7 @@ update msg model =
             let
                 newModel =
                     deleteBox model
+                        |> updateClippedImageRange 0
             in
             ( newModel
             , Cmd.none
@@ -256,6 +271,36 @@ update msg model =
 
                 Others _ ->
                     ( model, Cmd.none )
+
+        ChangeClippedImageRange d ->
+            ( updateClippedImageRange d model
+            , Cmd.none
+            )
+
+
+updateClippedImageRange : Int -> Model -> Model
+updateClippedImageRange d ({ boxies, clippedImageRange } as model) =
+    let
+        { s, t } =
+            clippedImageRange
+
+        len =
+            BB.size boxies
+
+        newCIR =
+            if len <= 3 then
+                Range 0 len
+
+            else if 0 <= s + d && s + d + 3 <= len then
+                Range (s + d) (s + d + 3)
+
+            else
+                Range s t
+
+        _ =
+            Debug.log "cir" newCIR
+    in
+    { model | clippedImageRange = newCIR }
 
 
 setNewName : BB.Id -> String -> Model -> Model
@@ -516,11 +561,10 @@ setClippedImage ({ boxies } as model) value =
 
 view : Model -> Html Msg
 view model =
-    div
-        [ class "wrapper"
-        ]
-        [ viewMain model
-        , viewSide model
+    main_
+        []
+        [ viewSide model
+        , viewMain model
         ]
 
 
@@ -537,12 +581,12 @@ viewMain ({ image } as model) =
         Ok ({ src, size } as justImage) ->
             div
                 [ tabindex 0
+                , class "main"
                 , id "main"
                 ]
                 [ S.svg
                     [ style "width" (String.fromFloat (svgWidth size))
                     , style "height" (String.fromFloat (svgHeight size))
-                    , style "border" "1px solid #000"
                     , onMouseMove Dragged
                     , SA.class "main"
                     ]
@@ -847,12 +891,44 @@ viewSide model =
     div
         [ class "side"
         ]
-        [ button [ onClick ImageRequested ] [ text "Load Image" ]
-        , button [ onClick AddBox ] [ text "Add" ]
-        , button [ onClick CopyBox ] [ text "Copy" ]
-        , button [ onClick DeleteBox ] [ text "Delete" ]
+        [ div
+            [ class "side_btn side_btn-load"
+            , onClick ImageRequested
+            ]
+            [ div [ class "side_btn-load_inner" ] []
+            ]
+        , div
+            [ class "side_btn side_btn-add"
+            , onClick AddBox
+            ]
+            [ div [ class "side_btn-add_inner" ] []
+            ]
+        , div
+            [ class "side_btn side_btn-duplicate"
+            , onClick DuplicateBox
+            ]
+            [ div [ class "side_btn-duplicate_inner" ] []
+            ]
+        , div
+            [ class "side_btn side_btn-delete"
+            , onClick DeleteBox
+            ]
+            [ div [ class "side_btn-delete_inner" ] []
+            ]
         , viewClippedImages model
-        , button [ onClick Download ] [ text "Download" ]
+        , div
+            [ class "side_btn side_btn-download"
+            , onClick Download
+            ]
+            [ div
+                [ class "side_btn-download_inner"
+                ]
+                [ div
+                    [ class "side_btn-download_inner_bar"
+                    ]
+                    []
+                ]
+            ]
         ]
 
 
@@ -876,11 +952,23 @@ viewHeldBoxInfo model =
 
 
 viewClippedImages : Model -> Html Msg
-viewClippedImages ({ boxies } as model) =
-    div [ class "clipped-images" ] <|
-        List.map
-            (viewClippedImage model)
-            (BB.toListWith makeBox boxies)
+viewClippedImages ({ boxies, clippedImageRange } as model) =
+    div [ class "side_img clippedImgContainer" ] <|
+        [ button
+            [ onClick (ChangeClippedImageRange -1)
+            , class "clippedImgContainer_btn clippedImgContainer_btn-left"
+            ]
+            []
+        , div [ class "clippedImgContainer_img clippedImgs" ] <|
+            List.map
+                (viewClippedImage model)
+                (listSubseq clippedImageRange (BB.toListWith makeBox boxies))
+        , button
+            [ onClick (ChangeClippedImageRange 1)
+            , class "clippedImgContainer_btn clippedImgContainer_btn-right"
+            ]
+            []
+        ]
 
 
 viewClippedImage : Model -> Box -> Html Msg
@@ -890,20 +978,27 @@ viewClippedImage model { id, bbox } =
             p [] [ text "No Image" ]
 
         Just url ->
-            div []
-                [ img
-                    [ src url
-                    , style "width" "200px"
-                    , style "height" "auto"
-                    , style "border" "1px solid #333"
+            div
+                [ class "clippedImgs_img clippedImg"
+                ]
+                [ div
+                    [ class "clippedImg_img"
                     ]
-                    []
-                , input
-                    [ onInput (NameChanged id)
-                    , placeholder (String.fromInt id)
+                    [ img
+                        [ src url
+                        ]
+                        []
                     ]
-                    []
-                , span [] [ text ".png" ]
+                , div
+                    [ class "clippedImg_filename"
+                    ]
+                    [ input
+                        [ onInput (NameChanged id)
+                        , placeholder (String.fromInt id)
+                        ]
+                        []
+                    , span [] [ text ".png" ]
+                    ]
                 ]
 
 
@@ -951,3 +1046,17 @@ keyDecoder =
                     c ->
                         KeyPressed (Others c)
             )
+
+
+listSubseq : Range -> List a -> List a
+listSubseq { s, t } list =
+    List.foldr
+        (\( i, e ) acc ->
+            if s <= i && i < t then
+                e :: acc
+
+            else
+                acc
+        )
+        []
+        (List.indexedMap Tuple.pair list)

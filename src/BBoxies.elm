@@ -238,3 +238,8 @@ validateName id name =
 
     else
         name
+
+
+size : BBoxies -> Int
+size { entities } =
+    Dict.size entities

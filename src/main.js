@@ -5541,6 +5541,10 @@ var $author$project$Main$Mouse = F4(
 	function (x, y, dx, dy) {
 		return {dx: dx, dy: dy, x: x, y: y};
 	});
+var $author$project$Main$Range = F2(
+	function (s, t) {
+		return {s: s, t: t};
+	});
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $author$project$Main$askImageInfo = _Platform_outgoingPort('askImageInfo', $elm$json$Json$Encode$string);
 var $elm$core$Tuple$second = function (_v0) {
@@ -5725,6 +5729,7 @@ var $author$project$Main$init = function (_v0) {
 						_Utils_Tuple2(48, 350),
 						_Utils_Tuple2(199, 490))
 					])),
+			clippedImageRange: A2($author$project$Main$Range, 0, 3),
 			image: $elm$core$Result$Err('No Image'),
 			mouse: A4($author$project$Main$Mouse, 0, 0, 0, 0)
 		},
@@ -8099,6 +8104,45 @@ var $author$project$BBoxies$toggleSelect = F2(
 			boxies,
 			{select: id});
 	});
+var $elm$core$Debug$log = _Debug_log;
+var $elm$core$Dict$sizeHelp = F2(
+	function (n, dict) {
+		sizeHelp:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return n;
+			} else {
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$n = A2($elm$core$Dict$sizeHelp, n + 1, right),
+					$temp$dict = left;
+				n = $temp$n;
+				dict = $temp$dict;
+				continue sizeHelp;
+			}
+		}
+	});
+var $elm$core$Dict$size = function (dict) {
+	return A2($elm$core$Dict$sizeHelp, 0, dict);
+};
+var $author$project$BBoxies$size = function (_v0) {
+	var entities = _v0.entities;
+	return $elm$core$Dict$size(entities);
+};
+var $author$project$Main$updateClippedImageRange = F2(
+	function (d, model) {
+		var boxies = model.boxies;
+		var clippedImageRange = model.clippedImageRange;
+		var len = $author$project$BBoxies$size(boxies);
+		var _v0 = clippedImageRange;
+		var s = _v0.s;
+		var t = _v0.t;
+		var newCIR = (len <= 3) ? A2($author$project$Main$Range, 0, len) : (((0 <= (s + d)) && (_Utils_cmp((s + d) + 3, len) < 1)) ? A2($author$project$Main$Range, s + d, (s + d) + 3) : A2($author$project$Main$Range, s, t));
+		var _v1 = A2($elm$core$Debug$log, 'cir', newCIR);
+		return _Utils_update(
+			model,
+			{clippedImageRange: newCIR});
+	});
 var $elm$core$Basics$composeL = F3(
 	function (g, f, x) {
 		return g(
@@ -8214,7 +8258,10 @@ var $author$project$Main$update = F2(
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
-							{boxies: $author$project$BBoxies$empty}),
+							{
+								boxies: $author$project$BBoxies$empty,
+								clippedImageRange: A2($author$project$Main$Range, 0, 0)
+							}),
 						A2(
 							$elm$core$Task$perform,
 							$author$project$Main$ImageEncoded,
@@ -8236,19 +8283,28 @@ var $author$project$Main$update = F2(
 						A2($author$project$Main$setClippedImage, model, value),
 						$elm$core$Platform$Cmd$none);
 				case 'AddBox':
-					var newModel = $author$project$Main$addBox(model);
+					var newModel = A2(
+						$author$project$Main$updateClippedImageRange,
+						0,
+						$author$project$Main$addBox(model));
 					var id = model.boxies.nextId;
 					return _Utils_Tuple2(
 						newModel,
 						A2($author$project$Main$clippedImageCmd, id, newModel));
-				case 'CopyBox':
-					var newModel = $author$project$Main$copyBox(model);
+				case 'DuplicateBox':
+					var newModel = A2(
+						$author$project$Main$updateClippedImageRange,
+						0,
+						$author$project$Main$copyBox(model));
 					var id = model.boxies.nextId;
 					return _Utils_Tuple2(
 						newModel,
 						A2($author$project$Main$clippedImageCmd, id, newModel));
 				case 'DeleteBox':
-					var newModel = $author$project$Main$deleteBox(model);
+					var newModel = A2(
+						$author$project$Main$updateClippedImageRange,
+						0,
+						$author$project$Main$deleteBox(model));
 					return _Utils_Tuple2(newModel, $elm$core$Platform$Cmd$none);
 				case 'NameChanged':
 					var id = msg.a;
@@ -8279,7 +8335,7 @@ var $author$project$Main$update = F2(
 					return _Utils_Tuple2(
 						A2($author$project$Main$moveSelectedBox, dir, model),
 						cmd);
-				default:
+				case 'KeyPressed':
 					var key = msg.a;
 					switch (key.$) {
 						case 'Arrow':
@@ -8298,8 +8354,18 @@ var $author$project$Main$update = F2(
 						default:
 							return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
+				default:
+					var d = msg.a;
+					return _Utils_Tuple2(
+						A2($author$project$Main$updateClippedImageRange, d, model),
+						$elm$core$Platform$Cmd$none);
 			}
 		}
+	});
+var $elm$html$Html$main_ = _VirtualDom_node('main');
+var $author$project$Main$Dragged = F2(
+	function (a, b) {
+		return {$: 'Dragged', a: a, b: b};
 	});
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -8309,12 +8375,8 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 			$elm$json$Json$Encode$string(string));
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
-var $elm$html$Html$div = _VirtualDom_node('div');
-var $author$project$Main$Dragged = F2(
-	function (a, b) {
-		return {$: 'Dragged', a: a, b: b};
-	});
 var $elm$svg$Svg$Attributes$class = _VirtualDom_attribute('class');
+var $elm$html$Html$div = _VirtualDom_node('div');
 var $elm$core$String$fromFloat = _String_fromNumber;
 var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$virtual_dom$VirtualDom$Normal = function (a) {
@@ -8767,6 +8829,7 @@ var $author$project$Main$viewMain = function (model) {
 			_List_fromArray(
 				[
 					$elm$html$Html$Attributes$tabindex(0),
+					$elm$html$Html$Attributes$class('main'),
 					$elm$html$Html$Attributes$id('main')
 				]),
 			_List_fromArray(
@@ -8785,7 +8848,6 @@ var $author$project$Main$viewMain = function (model) {
 							'height',
 							$elm$core$String$fromFloat(
 								$author$project$Main$svgHeight(size))),
-							A2($elm$html$Html$Attributes$style, 'border', '1px solid #000'),
 							$author$project$Main$onMouseMove($author$project$Main$Dragged),
 							$elm$svg$Svg$Attributes$class('main')
 						]),
@@ -8798,16 +8860,38 @@ var $author$project$Main$viewMain = function (model) {
 	}
 };
 var $author$project$Main$AddBox = {$: 'AddBox'};
-var $author$project$Main$CopyBox = {$: 'CopyBox'};
 var $author$project$Main$Download = {$: 'Download'};
+var $author$project$Main$DuplicateBox = {$: 'DuplicateBox'};
 var $author$project$Main$ImageRequested = {$: 'ImageRequested'};
-var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$html$Html$Events$onClick = function (msg) {
 	return A2(
 		$elm$html$Html$Events$on,
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
+var $author$project$Main$ChangeClippedImageRange = function (a) {
+	return {$: 'ChangeClippedImageRange', a: a};
+};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
+var $author$project$Main$listSubseq = F2(
+	function (_v0, list) {
+		var s = _v0.s;
+		var t = _v0.t;
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (_v1, acc) {
+					var i = _v1.a;
+					var e = _v1.b;
+					return ((_Utils_cmp(s, i) < 1) && (_Utils_cmp(i, t) < 0)) ? A2($elm$core$List$cons, e, acc) : acc;
+				}),
+			_List_Nil,
+			A2($elm$core$List$indexedMap, $elm$core$Tuple$pair, list));
+	});
 var $author$project$Main$NameChanged = F2(
 	function (a, b) {
 		return {$: 'NameChanged', a: a, b: b};
@@ -8870,51 +8954,100 @@ var $author$project$Main$viewClippedImage = F2(
 			var url = _v1.a;
 			return A2(
 				$elm$html$Html$div,
-				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('clippedImgs_img clippedImg')
+					]),
 				_List_fromArray(
 					[
 						A2(
-						$elm$html$Html$img,
+						$elm$html$Html$div,
 						_List_fromArray(
 							[
-								$elm$html$Html$Attributes$src(url),
-								A2($elm$html$Html$Attributes$style, 'width', '200px'),
-								A2($elm$html$Html$Attributes$style, 'height', 'auto'),
-								A2($elm$html$Html$Attributes$style, 'border', '1px solid #333')
+								$elm$html$Html$Attributes$class('clippedImg_img')
 							]),
-						_List_Nil),
-						A2(
-						$elm$html$Html$input,
 						_List_fromArray(
 							[
-								$elm$html$Html$Events$onInput(
-								$author$project$Main$NameChanged(id)),
-								$elm$html$Html$Attributes$placeholder(
-								$elm$core$String$fromInt(id))
+								A2(
+								$elm$html$Html$img,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$src(url)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('clippedImg_filename')
 							]),
-						_List_Nil),
-						A2(
-						$elm$html$Html$span,
-						_List_Nil,
 						_List_fromArray(
 							[
-								$elm$html$Html$text('.png')
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Events$onInput(
+										$author$project$Main$NameChanged(id)),
+										$elm$html$Html$Attributes$placeholder(
+										$elm$core$String$fromInt(id))
+									]),
+								_List_Nil),
+								A2(
+								$elm$html$Html$span,
+								_List_Nil,
+								_List_fromArray(
+									[
+										$elm$html$Html$text('.png')
+									]))
 							]))
 					]));
 		}
 	});
 var $author$project$Main$viewClippedImages = function (model) {
 	var boxies = model.boxies;
+	var clippedImageRange = model.clippedImageRange;
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
-				$elm$html$Html$Attributes$class('clipped-images')
+				$elm$html$Html$Attributes$class('side_img clippedImgContainer')
 			]),
-		A2(
-			$elm$core$List$map,
-			$author$project$Main$viewClippedImage(model),
-			A2($author$project$BBoxies$toListWith, $author$project$Main$makeBox, boxies)));
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						$author$project$Main$ChangeClippedImageRange(-1)),
+						$elm$html$Html$Attributes$class('clippedImgContainer_btn clippedImgContainer_btn-left')
+					]),
+				_List_Nil),
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$class('clippedImgContainer_img clippedImgs')
+					]),
+				A2(
+					$elm$core$List$map,
+					$author$project$Main$viewClippedImage(model),
+					A2(
+						$author$project$Main$listSubseq,
+						clippedImageRange,
+						A2($author$project$BBoxies$toListWith, $author$project$Main$makeBox, boxies)))),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						$author$project$Main$ChangeClippedImageRange(1)),
+						$elm$html$Html$Attributes$class('clippedImgContainer_btn clippedImgContainer_btn-right')
+					]),
+				_List_Nil)
+			]));
 };
 var $author$project$Main$viewSide = function (model) {
 	return A2(
@@ -8926,69 +9059,110 @@ var $author$project$Main$viewSide = function (model) {
 		_List_fromArray(
 			[
 				A2(
-				$elm$html$Html$button,
+				$elm$html$Html$div,
 				_List_fromArray(
 					[
+						$elm$html$Html$Attributes$class('side_btn side_btn-load'),
 						$elm$html$Html$Events$onClick($author$project$Main$ImageRequested)
 					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Load Image')
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('side_btn-load_inner')
+							]),
+						_List_Nil)
 					])),
 				A2(
-				$elm$html$Html$button,
+				$elm$html$Html$div,
 				_List_fromArray(
 					[
+						$elm$html$Html$Attributes$class('side_btn side_btn-add'),
 						$elm$html$Html$Events$onClick($author$project$Main$AddBox)
 					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Add')
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('side_btn-add_inner')
+							]),
+						_List_Nil)
 					])),
 				A2(
-				$elm$html$Html$button,
+				$elm$html$Html$div,
 				_List_fromArray(
 					[
-						$elm$html$Html$Events$onClick($author$project$Main$CopyBox)
+						$elm$html$Html$Attributes$class('side_btn side_btn-duplicate'),
+						$elm$html$Html$Events$onClick($author$project$Main$DuplicateBox)
 					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Copy')
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('side_btn-duplicate_inner')
+							]),
+						_List_Nil)
 					])),
 				A2(
-				$elm$html$Html$button,
+				$elm$html$Html$div,
 				_List_fromArray(
 					[
+						$elm$html$Html$Attributes$class('side_btn side_btn-delete'),
 						$elm$html$Html$Events$onClick($author$project$Main$DeleteBox)
 					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Delete')
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('side_btn-delete_inner')
+							]),
+						_List_Nil)
 					])),
 				$author$project$Main$viewClippedImages(model),
 				A2(
-				$elm$html$Html$button,
+				$elm$html$Html$div,
 				_List_fromArray(
 					[
+						$elm$html$Html$Attributes$class('side_btn side_btn-download'),
 						$elm$html$Html$Events$onClick($author$project$Main$Download)
 					]),
 				_List_fromArray(
 					[
-						$elm$html$Html$text('Download')
+						A2(
+						$elm$html$Html$div,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$class('side_btn-download_inner')
+							]),
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$class('side_btn-download_inner_bar')
+									]),
+								_List_Nil)
+							]))
 					]))
 			]));
 };
 var $author$project$Main$view = function (model) {
 	return A2(
-		$elm$html$Html$div,
+		$elm$html$Html$main_,
+		_List_Nil,
 		_List_fromArray(
 			[
-				$elm$html$Html$Attributes$class('wrapper')
-			]),
-		_List_fromArray(
-			[
-				$author$project$Main$viewMain(model),
-				$author$project$Main$viewSide(model)
+				$author$project$Main$viewSide(model),
+				$author$project$Main$viewMain(model)
 			]));
 };
 var $author$project$Main$main = $elm$browser$Browser$element(

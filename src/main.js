@@ -5694,12 +5694,7 @@ var $author$project$BBoxies$fromList = function (origins) {
 					function (i, origin) {
 						return _Utils_Tuple2(
 							i,
-							{
-								clippedImg: $elm$core$Maybe$Nothing,
-								name: $elm$core$String$fromInt(i) + '.png',
-								s: origin.s,
-								t: origin.t
-							});
+							{clippedImg: $elm$core$Maybe$Nothing, name: '', s: origin.s, t: origin.t});
 					}),
 				origins)),
 		hold: $elm$core$Maybe$Nothing,
@@ -6118,12 +6113,7 @@ var $author$project$BBoxies$add = F2(
 				entities: A3(
 					$elm$core$Dict$insert,
 					nextId,
-					{
-						clippedImg: $elm$core$Maybe$Nothing,
-						name: $elm$core$String$fromInt(nextId) + '.png',
-						s: origin.s,
-						t: origin.t
-					},
+					{clippedImg: $elm$core$Maybe$Nothing, name: '', s: origin.s, t: origin.t},
 					entities),
 				nextId: nextId + 1
 			});
@@ -8937,6 +8927,7 @@ var $elm$html$Html$Attributes$src = function (url) {
 		'src',
 		_VirtualDom_noJavaScriptOrHtmlUri(url));
 };
+var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Main$viewClippedImage = F2(
 	function (model, _v0) {
 		var id = _v0.id;
@@ -8991,7 +8982,8 @@ var $author$project$Main$viewClippedImage = F2(
 										$elm$html$Html$Events$onInput(
 										$author$project$Main$NameChanged(id)),
 										$elm$html$Html$Attributes$placeholder(
-										$elm$core$String$fromInt(id))
+										$elm$core$String$fromInt(id)),
+										$elm$html$Html$Attributes$value(bbox.name)
 									]),
 								_List_Nil),
 								A2(

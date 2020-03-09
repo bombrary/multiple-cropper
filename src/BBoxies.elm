@@ -57,7 +57,7 @@ fromList origins =
                     ( i
                     , { s = origin.s
                       , t = origin.t
-                      , name = String.fromInt i ++ ".png"
+                      , name = ""
                       , clippedImg = Nothing
                       }
                     )
@@ -77,7 +77,7 @@ add origin ({ entities, nextId } as boxies) =
                 { s = origin.s
                 , t = origin.t
                 , clippedImg = Nothing
-                , name = String.fromInt nextId ++ ".png"
+                , name = ""
                 }
                 entities
         , nextId = nextId + 1

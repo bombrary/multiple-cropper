@@ -995,6 +995,7 @@ viewClippedImage model { id, bbox } =
                     [ input
                         [ onInput (NameChanged id)
                         , placeholder (String.fromInt id)
+                        , value bbox.name
                         ]
                         []
                     , span [] [ text ".png" ]

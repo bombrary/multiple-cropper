@@ -296,9 +296,6 @@ updateClippedImageRange d ({ boxies, clippedImageRange } as model) =
 
             else
                 Range s t
-
-        _ =
-            Debug.log "cir" newCIR
     in
     { model | clippedImageRange = newCIR }
 

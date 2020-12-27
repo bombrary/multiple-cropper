@@ -2,19 +2,24 @@ body {
   margin: 0;
   height: 100%;
   color: #333;
-  background-color: #ccd; }
+  background-color: #ccd;
+}
 
 main {
   width: 100%;
-  height: 100%; }
-  main .main {
-    margin-top: 120px; }
+  height: 100%;
+}
+main .main {
+  margin-top: 120px;
+}
 
 .main {
-  outline: none; }
-  .main svg {
-    box-shadow: 2px 2px 10px #333;
-    margin: 10px; }
+  outline: none;
+}
+.main svg {
+  box-shadow: 2px 2px 10px #333;
+  margin: 10px;
+}
 
 .side {
   position: fixed;
@@ -25,206 +30,243 @@ main {
   box-sizing: border-box;
   display: flex;
   background-color: #fff;
-  flex-direction: row; }
-  .side_btn {
-    box-sizing: border-box;
-    width: 100px;
-    border: none;
-    background: none;
-    border: 1px solid #ccc;
-    outline: none; }
-    .side_btn:hover {
-      opacity: 0.7; }
-    .side_btn-load {
-      position: relative; }
-      .side_btn-load_inner::before {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 20px;
-        border: 3px solid #333;
-        transform: translate(-11.5px, -11.5px); }
-      .side_btn-load_inner::after {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 20px;
-        background-color: #333;
-        border: 3px solid #333;
-        transform: scaleY(0.7) skewX(-20deg) translate(-11.5px, -11.5px); }
-    .side_btn-add {
-      position: relative; }
-      .side_btn-add_inner::before {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 1px;
-        border-top: 3px solid #333;
-        transform: translate(-10px, 0); }
-      .side_btn-add_inner::after {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 1px;
-        height: 20px;
-        border-left: 3px solid #333;
-        transform: translate(-1.5px, -8.5px); }
-    .side_btn-duplicate {
-      position: relative; }
-      .side_btn-duplicate_inner::before {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 15px;
-        height: 20px;
-        border: 3px solid #333;
-        transform: translate(-11.5px, -11.5px); }
-      .side_btn-duplicate_inner::after {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 15px;
-        height: 20px;
-        background-color: #333;
-        border: 3px solid #333;
-        transform: translate(-5px, -5px); }
-    .side_btn-delete {
-      position: relative; }
-      .side_btn-delete_inner::before {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 1px;
-        border-top: 3px solid #333;
-        transform: translate(-10px, 0) rotate(-45deg); }
-      .side_btn-delete_inner::after {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 1px;
-        border-top: 3px solid #333;
-        transform: translate(-10px, 0) rotate(45deg); }
-    .side_btn-download {
-      position: relative; }
-      .side_btn-download_inner::before {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 10px;
-        height: 10px;
-        border-top: 3px solid #333;
-        border-left: 3px solid #333;
-        transform: translate(-7px, -12px) rotate(-135deg); }
-      .side_btn-download_inner::after {
-        content: " ";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 20px;
-        height: 1px;
-        border-bottom: 3px solid #333;
-        transform: translate(-10px, 10px); }
-      .side_btn-download_inner_bar {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 1px;
-        height: 20px;
-        border-left: 3px solid #333;
-        transform: translate(-2px, -18px); }
-  .side_img {
-    flex: 1; }
+  flex-direction: row;
+}
+.side_btn {
+  box-sizing: border-box;
+  width: 100px;
+  border: none;
+  background: none;
+  border: 1px solid #ccc;
+  outline: none;
+}
+.side_btn:hover {
+  opacity: 0.7;
+}
+.side_btn-load {
+  position: relative;
+}
+.side_btn-load_inner::before {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #333;
+  transform: translate(-11.5px, -11.5px);
+}
+.side_btn-load_inner::after {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  background-color: #333;
+  border: 3px solid #333;
+  transform: scaleY(0.7) skewX(-20deg) translate(-11.5px, -11.5px);
+}
+.side_btn-add {
+  position: relative;
+}
+.side_btn-add_inner::before {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 1px;
+  border-top: 3px solid #333;
+  transform: translate(-10px, 0);
+}
+.side_btn-add_inner::after {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1px;
+  height: 20px;
+  border-left: 3px solid #333;
+  transform: translate(-1.5px, -8.5px);
+}
+.side_btn-duplicate {
+  position: relative;
+}
+.side_btn-duplicate_inner::before {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15px;
+  height: 20px;
+  border: 3px solid #333;
+  transform: translate(-11.5px, -11.5px);
+}
+.side_btn-duplicate_inner::after {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 15px;
+  height: 20px;
+  background-color: #333;
+  border: 3px solid #333;
+  transform: translate(-5px, -5px);
+}
+.side_btn-delete {
+  position: relative;
+}
+.side_btn-delete_inner::before {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 1px;
+  border-top: 3px solid #333;
+  transform: translate(-10px, 0) rotate(-45deg);
+}
+.side_btn-delete_inner::after {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 1px;
+  border-top: 3px solid #333;
+  transform: translate(-10px, 0) rotate(45deg);
+}
+.side_btn-download {
+  position: relative;
+}
+.side_btn-download_inner::before {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-top: 3px solid #333;
+  border-left: 3px solid #333;
+  transform: translate(-7px, -12px) rotate(-135deg);
+}
+.side_btn-download_inner::after {
+  content: " ";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 1px;
+  border-bottom: 3px solid #333;
+  transform: translate(-10px, 10px);
+}
+.side_btn-download_inner_bar {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1px;
+  height: 20px;
+  border-left: 3px solid #333;
+  transform: translate(-2px, -18px);
+}
+.side_img {
+  flex: 1;
+}
 
 .clippedImgContainer {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-  padding: 0 10px; }
-  .clippedImgContainer_btn {
-    background: none;
-    border: none;
-    outline: none; }
-    .clippedImgContainer_btn:hover {
-      opacity: 0.7; }
-    .clippedImgContainer_btn-left {
-      position: relative; }
-      .clippedImgContainer_btn-left::before {
-        content: " ";
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        border-top: 3px solid #333;
-        border-left: 3px solid #333;
-        top: 50%;
-        left: 50%;
-        transform: rotate(-45deg); }
-    .clippedImgContainer_btn-right {
-      position: relative; }
-      .clippedImgContainer_btn-right::before {
-        content: " ";
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        border-top: 3px solid #333;
-        border-left: 3px solid #333;
-        top: 50%;
-        right: 50%;
-        transform: rotate(135deg); }
-  .clippedImgContainer_img {
-    flex: 1;
-    padding: 0 10px; }
+  padding: 0 10px;
+}
+.clippedImgContainer_btn {
+  background: none;
+  border: none;
+  outline: none;
+}
+.clippedImgContainer_btn:hover {
+  opacity: 0.7;
+}
+.clippedImgContainer_btn-left {
+  position: relative;
+}
+.clippedImgContainer_btn-left::before {
+  content: " ";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-top: 3px solid #333;
+  border-left: 3px solid #333;
+  top: 50%;
+  left: 50%;
+  transform: rotate(-45deg);
+}
+.clippedImgContainer_btn-right {
+  position: relative;
+}
+.clippedImgContainer_btn-right::before {
+  content: " ";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-top: 3px solid #333;
+  border-left: 3px solid #333;
+  top: 50%;
+  right: 50%;
+  transform: rotate(135deg);
+}
+.clippedImgContainer_img {
+  flex: 1;
+  padding: 0 10px;
+}
 
 .clippedImgs {
   display: flex;
   flex-direction: row;
-  height: 100%; }
-  .clippedImgs_img {
-    flex: 0.33;
-    margin: 0 10px; }
+  height: 100%;
+}
+.clippedImgs_img {
+  flex: 0.33;
+  margin: 0 10px;
+}
 
 .clippedImg {
   display: flex;
   height: 100%;
   flex-direction: column;
-  justify-content: space-between; }
-  .clippedImg_img {
-    width: 100%;
-    height: 80%; }
-    .clippedImg_img img {
-      box-sizing: border-box;
-      border: 1px solid #333;
-      max-width: 100%;
-      max-height: 80%;
-      display: block;
-      margin: 0 auto; }
-  .clippedImg_filename {
-    width: 100%;
-    height: 20%;
-    display: flex;
-    flex-direction: row; }
-    .clippedImg_filename input {
-      width: 80%;
-      text-align: right;
-      font-size: 1em;
-      outline: none;
-      border: none;
-      border-bottom: 3px dotted #ccc; }
-    .clippedImg_filename span {
-      flex: 1;
-      text-align: center; }
+  justify-content: space-between;
+}
+.clippedImg_img {
+  width: 100%;
+  height: 80%;
+}
+.clippedImg_img img {
+  box-sizing: border-box;
+  border: 1px solid #333;
+  max-width: 100%;
+  max-height: 80%;
+  display: block;
+  margin: 0 auto;
+}
+.clippedImg_filename {
+  width: 100%;
+  height: 20%;
+  display: flex;
+  flex-direction: row;
+}
+.clippedImg_filename input {
+  width: 80%;
+  height: 1em;
+  text-align: right;
+  font-size: 1em;
+  outline: none;
+  border: none;
+  border-bottom: 3px dotted #ccc;
+}
+.clippedImg_filename span {
+  flex: 1;
+  text-align: center;
+}
 
 /*# sourceMappingURL=style.css.map */
